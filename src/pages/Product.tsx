@@ -10,6 +10,7 @@ import { upsertCartItem } from "@/lib/cart";
 import { useToast } from "@/components/ui/use-toast";
 import ProductCard, { type ProductCardModel } from "@/components/site/ProductCard";
 import { usePageMeta } from "@/hooks/use-page-meta";
+import { convertDriveUrl } from "@/lib/image-utils";
 
 type Variant = {
   id: string;
@@ -122,7 +123,7 @@ export default function Product() {
             <div>
               <div className="aspect-[4/5] overflow-hidden rounded-lg border bg-muted">
                 {mainImage ? (
-                  <img src={mainImage} alt={p.title_bn} className="h-full w-full object-cover" />
+                  <img src={convertDriveUrl(mainImage)} alt={p.title_bn} className="h-full w-full object-cover" />
                 ) : (
                   <div className="flex h-full w-full items-center justify-center text-sm text-muted-foreground">ছবি নেই</div>
                 )}
@@ -131,7 +132,7 @@ export default function Product() {
                 <div className="mt-3 grid grid-cols-5 gap-2">
                   {images.slice(0, 5).map((im) => (
                     <div key={im.image_url} className="aspect-square overflow-hidden rounded-md border bg-muted">
-                      <img src={im.image_url} alt={im.alt_bn ?? p.title_bn} className="h-full w-full object-cover" loading="lazy" />
+                      <img src={convertDriveUrl(im.image_url)} alt={im.alt_bn ?? p.title_bn} className="h-full w-full object-cover" loading="lazy" />
                     </div>
                   ))}
                 </div>

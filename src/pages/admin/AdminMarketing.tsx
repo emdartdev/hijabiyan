@@ -9,6 +9,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/components/ui/use-toast";
 import { Switch } from "@/components/ui/switch";
 import { usePageMeta } from "@/hooks/use-page-meta";
+import { convertDriveUrl } from "@/lib/image-utils";
 
 type CouponRow = {
   id: string;
@@ -502,7 +503,7 @@ export default function AdminMarketing() {
 
                 {popup.image_url ? (
                   <div className="rounded-md border p-3">
-                    <img src={popup.image_url} alt={popup.title_bn ?? "Popup image"} className="w-full max-w-md rounded" loading="lazy" />
+                    <img src={convertDriveUrl(popup.image_url)} alt={popup.title_bn ?? "Popup image"} className="w-full max-w-md rounded" loading="lazy" />
                     <div className="mt-2 text-xs text-muted-foreground break-all">{popup.image_url}</div>
                   </div>
                 ) : null}

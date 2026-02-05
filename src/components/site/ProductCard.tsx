@@ -2,6 +2,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import SiteButton from "@/components/site/SiteButton";
 import { formatBDT } from "@/lib/money";
 import { NavLink } from "@/components/NavLink";
+import { convertDriveUrl } from "@/lib/image-utils";
 
 export type ProductCardModel = {
   id: string;
@@ -14,12 +15,14 @@ export type ProductCardModel = {
 
 export default function ProductCard({ p }: { p: ProductCardModel }) {
   const discount = p.compare_at_price_bdt && p.compare_at_price_bdt > p.price_bdt;
+  const imageUrl = convertDriveUrl(p.image_url);
+
   return (
     <Card className="overflow-hidden">
       <NavLink to={`/p/${p.slug}`} className="block">
         <div className="aspect-[4/5] w-full bg-muted">
-          {p.image_url ? (
-            <img src={p.image_url} alt={p.title_bn} className="h-full w-full object-cover" loading="lazy" />
+          {imageUrl ? (
+            <img src={imageUrl} alt={p.title_bn} className="h-full w-full object-cover" loading="lazy" />
           ) : (
             <div className="flex h-full w-full items-center justify-center text-sm text-muted-foreground">ছবি নেই</div>
           )}

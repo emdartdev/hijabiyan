@@ -12,6 +12,7 @@ import { usePageMeta } from "@/hooks/use-page-meta";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
+import { convertDriveUrl } from "@/lib/image-utils";
 
 type CategoryRow = {
   id: string;
@@ -122,7 +123,7 @@ export default function AdminCategories() {
         slug: form.slug?.trim() || slugifyBnLike(form.name_bn),
         description_bn: form.description_bn?.trim() || null,
         parent_id: form.parent_id || null,
-        image_url: form.image_url?.trim() || null,
+        image_url: form.image_url?.trim() ? convertDriveUrl(form.image_url.trim()) : null,
         seo_title_bn: form.seo_title_bn?.trim() || null,
         seo_description_bn: form.seo_description_bn?.trim() || null,
         is_active: form.is_active ?? true,
@@ -151,7 +152,10 @@ export default function AdminCategories() {
   };
 
   const handleDelete = async () => {
-    if (!selectedId || !confirm("নিশ্চিত মুছবেন?")) return;
+    if (!selected || !selectedId) return;
+    const msg = `"${selected.name_bn}" ডিলিট করবেন?\n\nএটি ডিলিট করলে এই ক্যাটাগরির সব পণ্য "Uncategorized" হয়ে যাবে। সাব-ক্যাটাগরিগুলো মেইন ক্যাটাগরি হয়ে যাবে।`;
+    if (!confirm(msg)) return;
+
     setBusy(true);
     try {
       const { error } = await supabase.from("categories").delete().eq("id", selectedId);

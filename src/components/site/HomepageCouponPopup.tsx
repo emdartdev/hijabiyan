@@ -8,6 +8,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import SiteButton from "@/components/site/SiteButton";
+import { convertDriveUrl } from "@/lib/image-utils";
 
 type PopupRow = {
   id: string;
@@ -62,7 +63,7 @@ export default function HomepageCouponPopup() {
 
         {popup.image_url ? (
           <img
-            src={popup.image_url}
+            src={convertDriveUrl(popup.image_url)}
             alt={popup.title_bn ?? "Coupon popup"}
             className="w-full rounded-md border"
             loading="lazy"

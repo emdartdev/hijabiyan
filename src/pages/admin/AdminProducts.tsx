@@ -11,6 +11,8 @@ import { formatBDT } from "@/lib/money";
 import { usePageMeta } from "@/hooks/use-page-meta";
 import { forwardRef } from "react";
 import { Switch } from "@/components/ui/switch";
+import { Upload, Image as ImageIcon } from "lucide-react";
+import { convertDriveUrl } from "@/lib/image-utils";
 
 type AdminProductRow = {
   id: string;
@@ -20,7 +22,7 @@ type AdminProductRow = {
   price_bdt: number;
   discount_price_bdt: number | null;
   is_active: boolean;
-  category_id: string;
+  category_id: string | null;
   description_bn: string | null;
   care_instructions_bn: string | null;
   delivery_notes_bn: string | null;
@@ -81,7 +83,7 @@ export default function AdminProducts() {
     title_bn: "",
     slug: "",
     sku: null,
-    category_id: "",
+    category_id: null,
     price_bdt: 0,
     discount_price_bdt: null,
     compare_at_price_bdt: null,
@@ -185,7 +187,7 @@ export default function AdminProducts() {
       title_bn: "",
       slug: "",
       sku: randomSku(),
-      category_id: categories[0]?.id ?? "",
+      category_id: categories[0]?.id ?? null,
       price_bdt: 0,
       discount_price_bdt: null,
       compare_at_price_bdt: null,
@@ -212,10 +214,8 @@ export default function AdminProducts() {
       toast({ title: "নাম দিন", description: "Product Name (বাংলা) ফাঁকা রাখা যাবে না।" });
       return;
     }
-    if (!categoryId) {
-      toast({ title: "ক্যাটাগরি নির্বাচন করুন", description: "Category ছাড়া পণ্য সেভ করা যাবে না।" });
-      return;
-    }
+    // Category is now optional, but recommended.
+    // if (!categoryId) { ... } 
     if (!slug) {
       toast({ title: "Slug দিন", description: "Slug ফাঁকা রাখা যাবে না।" });
       return;
@@ -292,13 +292,17 @@ export default function AdminProducts() {
 
   const updateVariant = (id: string, patch: Partial<VariantRow>) => {
     // Optimistic local update
-    setVariants((prev) => prev.map((v) => (v.id === id ? ({ ...v, ...patch } as VariantRow) : v)));
+    const finalPatch = { ...patch };
+    if (patch.image_url) {
+      finalPatch.image_url = convertDriveUrl(patch.image_url);
+    }
+    setVariants((prev) => prev.map((v) => (v.id === id ? ({ ...v, ...finalPatch } as VariantRow) : v)));
 
     // Debounced backend update
     const prevTimer = variantUpdateTimersRef.current[id];
     if (prevTimer) window.clearTimeout(prevTimer);
     variantUpdateTimersRef.current[id] = window.setTimeout(() => {
-      updateVariantNow(id, patch);
+      updateVariantNow(id, finalPatch);
     }, 500);
   };
 
@@ -322,7 +326,7 @@ export default function AdminProducts() {
         title_bn: "",
         slug: "",
         sku: randomSku(),
-        category_id: categories[0]?.id ?? "",
+        category_id: categories[0]?.id ?? null,
         price_bdt: 0,
         discount_price_bdt: null,
         compare_at_price_bdt: null,
@@ -358,7 +362,7 @@ export default function AdminProducts() {
 
   const addImageFromUrl = async (url: string) => {
     const productId = (form.id ?? selectedId) as string;
-    const clean = url.trim();
+    const clean = convertDriveUrl(url.trim());
     if (!clean) return;
     setBusy(true);
     try {
@@ -395,6 +399,39 @@ export default function AdminProducts() {
       if (insErr) throw insErr;
 
       await loadDetails(productId);
+    } catch (e: any) {
+      toast({ title: "আপলোড হয়নি", description: e?.message ?? "" });
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const uploadVariantImage = async (variantId: string, file: File) => {
+    const productId = (form.id ?? selectedId) as string;
+    setBusy(true);
+    try {
+      const ext = (file.name.split(".").pop() || "jpg").toLowerCase();
+      const path = `${productId}/v-${variantId}/${Date.now()}-${Math.random().toString(36).slice(2)}.${ext}`;
+
+      const { error: upErr } = await supabase.storage.from("product-images").upload(path, file, {
+        cacheControl: "3600",
+        upsert: false,
+      });
+      if (upErr) throw upErr;
+
+      const { data } = supabase.storage.from("product-images").getPublicUrl(path);
+      const publicUrl = data.publicUrl;
+      if (!publicUrl) throw new Error("Public URL পাওয়া যায়নি");
+
+      // Update the variant record
+      const { error: upvErr } = await supabase
+        .from("product_variants")
+        .update({ image_url: publicUrl } as any)
+        .eq("id", variantId);
+      if (upvErr) throw upvErr;
+
+      await loadDetails(productId);
+      toast({ title: "আপলোড হয়েছে", description: "ভ্যারিয়েন্ট ছবি আপডেট করা হয়েছে।" });
     } catch (e: any) {
       toast({ title: "আপলোড হয়নি", description: e?.message ?? "" });
     } finally {
@@ -571,10 +608,11 @@ export default function AdminProducts() {
               <div>
                 <label className="text-xs text-muted-foreground">ক্যাটাগরি</label>
                 <select
-                  value={form.category_id ?? ""}
-                  onChange={(e) => setField("category_id", e.target.value as any)}
+                  value={form.category_id ?? "none"}
+                  onChange={(e) => setField("category_id", e.target.value === "none" ? null : (e.target.value as any))}
                   className="mt-1 h-10 w-full rounded-md border bg-background px-3 text-sm"
                 >
+                  <option value="none">ক্যাটাগরি নেই (Uncategorized)</option>
                   {categories.map((c) => (
                     <option key={c.id} value={c.id}>
                       {c.name_bn}
@@ -683,9 +721,35 @@ export default function AdminProducts() {
                     </div>
 
                     <div className="mt-3 grid gap-3 lg:grid-cols-[1fr_140px_110px]">
-                      <div>
-                        <label className="text-xs text-muted-foreground">Variant Image URL (ঐচ্ছিক)</label>
-                        <Input value={v.image_url ?? ""} onChange={(e) => updateVariant(v.id, { image_url: e.target.value })} placeholder="https://..." />
+                      <div className="flex items-end gap-3">
+                        <div className="flex-1">
+                          <label className="text-xs text-muted-foreground">ভ্যারিয়েন্ট ছবি (URL বা আপলোড)</label>
+                          <div className="flex gap-2">
+                            <Input value={v.image_url ?? ""} onChange={(e) => updateVariant(v.id, { image_url: e.target.value })} placeholder="https://..." />
+                            <div className="relative">
+                              <Button variant="secondary" size="icon" className="shrink-0" asChild disabled={busy}>
+                                <label className="cursor-pointer">
+                                  <Upload className="h-4 w-4" />
+                                  <input
+                                    type="file"
+                                    accept="image/*"
+                                    className="hidden"
+                                    onChange={(e) => {
+                                      const f = e.target.files?.[0];
+                                      if (f) uploadVariantImage(v.id, f);
+                                    }}
+                                    disabled={busy}
+                                  />
+                                </label>
+                              </Button>
+                            </div>
+                          </div>
+                        </div>
+                        {v.image_url && (
+                          <div className="h-10 w-10 shrink-0 overflow-hidden rounded border bg-muted mb-0.5">
+                            <img src={v.image_url} alt="Variant" className="h-full w-full object-cover" />
+                          </div>
+                        )}
                       </div>
                       <div className="flex items-center gap-2 pt-6">
                         <input

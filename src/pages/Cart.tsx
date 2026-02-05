@@ -7,6 +7,7 @@ import { cartSubtotal, readCart, updateCartQty, type CartItem } from "@/lib/cart
 import { formatBDT } from "@/lib/money";
 import { NavLink } from "@/components/NavLink";
 import { usePageMeta } from "@/hooks/use-page-meta";
+import { convertDriveUrl } from "@/lib/image-utils";
 
 export default function Cart() {
   usePageMeta("কার্ট | hijabiyan.shop", "আপনার নির্বাচিত পণ্যগুলো দেখুন ও চেকআউট করুন।");
@@ -38,7 +39,7 @@ export default function Cart() {
                 <Card key={`${it.productId}::${it.variantId ?? ""}`} className="p-4">
                   <div className="flex gap-4">
                     <div className="h-20 w-16 overflow-hidden rounded-md border bg-muted">
-                      {it.imageUrl ? <img src={it.imageUrl} alt={it.titleBn} className="h-full w-full object-cover" loading="lazy" /> : null}
+                      {it.imageUrl ? <img src={convertDriveUrl(it.imageUrl)} alt={it.titleBn} className="h-full w-full object-cover" loading="lazy" /> : null}
                     </div>
                     <div className="min-w-0 flex-1">
                       <div className="truncate font-medium">{it.titleBn}</div>
