@@ -1,0 +1,19 @@
+project_id = "smouckatsuzrzhqlsjcq"
+
+[functions.create-order]
+verify_jwt = false
+
+[functions.track-order]
+verify_jwt = false
+
+[functions.admin-customers]
+verify_jwt = false
+
+[functions.admin-orders]
+verify_jwt = false
+
+[functions.coupon-preview]
+verify_jwt = false
+
+[functions.admin-dashboard]
+verify_jwt = false

@@ -1,0 +1,115 @@
+@import url("https://fonts.googleapis.com/css2?family=Hind+Siliguri:wght@400;500;600;700&display=swap");
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Definition of the design system. All colors, gradients, fonts, etc should be defined here. 
+All colors MUST be HSL.
+*/
+
+@layer base {
+  :root {
+    /* Pinkish-lavender, clean & modern */
+    --background: 270 50% 98%;
+    --foreground: 258 25% 12%;
+
+    --card: 0 0% 100%;
+    --card-foreground: 258 25% 12%;
+
+    --popover: 0 0% 100%;
+    --popover-foreground: 258 25% 12%;
+
+    --primary: 280 62% 46%;
+    --primary-foreground: 270 50% 98%;
+
+    --secondary: 270 35% 94%;
+    --secondary-foreground: 258 25% 12%;
+
+    --muted: 270 28% 93%;
+    --muted-foreground: 258 12% 40%;
+
+    --accent: 292 55% 92%;
+    --accent-foreground: 258 25% 12%;
+
+    --destructive: 0 84.2% 60.2%;
+    --destructive-foreground: 210 40% 98%;
+
+    --border: 270 20% 86%;
+    --input: 270 20% 86%;
+    --ring: 280 62% 46%;
+
+    --radius: 0.5rem;
+
+    --sidebar-background: 0 0% 98%;
+
+    --sidebar-foreground: 240 5.3% 26.1%;
+
+    --sidebar-primary: 240 5.9% 10%;
+
+    --sidebar-primary-foreground: 0 0% 98%;
+
+    --sidebar-accent: 240 4.8% 95.9%;
+
+    --sidebar-accent-foreground: 240 5.9% 10%;
+
+    --sidebar-border: 220 13% 91%;
+
+    --sidebar-ring: 217.2 91.2% 59.8%;
+  }
+
+  .dark {
+    --background: 258 25% 10%;
+    --foreground: 270 50% 98%;
+
+    --card: 258 25% 12%;
+    --card-foreground: 270 50% 98%;
+
+    --popover: 258 25% 12%;
+    --popover-foreground: 270 50% 98%;
+
+    --primary: 286 72% 70%;
+    --primary-foreground: 258 25% 10%;
+
+    --secondary: 258 18% 18%;
+    --secondary-foreground: 270 50% 98%;
+
+    --muted: 258 16% 18%;
+    --muted-foreground: 270 18% 78%;
+
+    --accent: 292 22% 22%;
+    --accent-foreground: 270 50% 98%;
+
+    --destructive: 0 62.8% 30.6%;
+    --destructive-foreground: 210 40% 98%;
+
+    --border: 258 16% 22%;
+    --input: 258 16% 22%;
+    --ring: 286 72% 70%;
+    --sidebar-background: 240 5.9% 10%;
+    --sidebar-foreground: 240 4.8% 95.9%;
+    --sidebar-primary: 224.3 76.3% 48%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 240 3.7% 15.9%;
+    --sidebar-accent-foreground: 240 4.8% 95.9%;
+    --sidebar-border: 240 3.7% 15.9%;
+    --sidebar-ring: 217.2 91.2% 59.8%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  html {
+    font-family: "Hind Siliguri", ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Arial, "Noto Sans", "Apple Color Emoji",
+      "Segoe UI Emoji";
+  }
+
+  body {
+    @apply bg-background text-foreground;
+    font-family: "Hind Siliguri", ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Arial, "Noto Sans", "Apple Color Emoji",
+      "Segoe UI Emoji";
+  }
+}

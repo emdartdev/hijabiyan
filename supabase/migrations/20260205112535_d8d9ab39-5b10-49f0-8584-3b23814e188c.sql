@@ -1,0 +1,1 @@
+ALTER TABLE public.homepage_coupon_popup ADD COLUMN IF NOT EXISTS image_path TEXT NULL;
