@@ -100,6 +100,29 @@ export default function AdminProducts() {
   // Debounce variant updates so typing doesn't cause flicker (reloading data on every keystroke).
   const variantUpdateTimersRef = useRef<Record<string, number>>({});
 
+  // Generate category-based numbered slug
+  const generateCategorySlug = (categoryId: string | null): string => {
+    // Get category slug
+    const category = categories.find(c => c.id === categoryId);
+    const categorySlug = category?.slug ?? 'product';
+    
+    // Find highest number for this category
+    const categoryProducts = products.filter(p => 
+      p.slug.startsWith(`${categorySlug}-`) && p.id !== form.id
+    );
+    
+    let maxNumber = 0;
+    categoryProducts.forEach(p => {
+      const match = p.slug.match(new RegExp(`^${categorySlug.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}-(\\d+)$`));
+      if (match) {
+        const num = parseInt(match[1], 10);
+        if (num > maxNumber) maxNumber = num;
+      }
+    });
+    
+    return `${categorySlug}-${maxNumber + 1}`;
+  };
+
   const loadBase = async () => {
     setLoading(true);
     try {
@@ -183,11 +206,14 @@ export default function AdminProducts() {
     setSelectedId(null);
     setVariants([]);
     setImages([]);
+    const initialCategoryId = categories[0]?.id ?? null;
+    const initialSlug = generateCategorySlug(initialCategoryId);
+    
     setForm({
       title_bn: "",
-      slug: "",
+      slug: initialSlug,
       sku: randomSku(),
-      category_id: categories[0]?.id ?? null,
+      category_id: initialCategoryId,
       price_bdt: 0,
       discount_price_bdt: null,
       compare_at_price_bdt: null,
@@ -216,10 +242,7 @@ export default function AdminProducts() {
     }
     // Category is now optional, but recommended.
     // if (!categoryId) { ... } 
-    if (!slug) {
-      toast({ title: "Slug দিন", description: "Slug ফাঁকা রাখা যাবে না।" });
-      return;
-    }
+
     if (!Number.isFinite(price) || price < 0) {
       toast({ title: "দাম ভুল", description: "Price সঠিক দিন।" });
       return;
@@ -588,16 +611,17 @@ export default function AdminProducts() {
                   onChange={(e) => {
                     const v = e.target.value;
                     setField("title_bn", v as any);
-                    if (!(form.slug ?? "").trim()) setField("slug", slugifyBnLike(v) as any);
+                    
+                    // Only auto-generate slug for new products
+                    if (!form.id) {
+                      const newSlug = generateCategorySlug(form.category_id ?? null);
+                      setField("slug", newSlug as any);
+                    }
+                    
                     if (!(form.sku ?? "")?.trim()) setField("sku", randomSku() as any);
                   }}
                   placeholder="যেমন: ডায়মন্ড হিজাব"
                 />
-              </div>
-
-              <div>
-                <label className="text-xs text-muted-foreground">Slug</label>
-                <Input value={form.slug ?? ""} onChange={(e) => setField("slug", slugifyBnLike(e.target.value) as any)} placeholder="diamond-hijab" />
               </div>
 
               <div>
@@ -609,7 +633,16 @@ export default function AdminProducts() {
                 <label className="text-xs text-muted-foreground">ক্যাটাগরি</label>
                 <select
                   value={form.category_id ?? "none"}
-                  onChange={(e) => setField("category_id", e.target.value === "none" ? null : (e.target.value as any))}
+                  onChange={(e) => {
+                    const newCategoryId = e.target.value === "none" ? null : e.target.value;
+                    setField("category_id", newCategoryId as any);
+                    
+                    // Only regenerate slug for new products
+                    if (!form.id) {
+                      const newSlug = generateCategorySlug(newCategoryId);
+                      setField("slug", newSlug as any);
+                    }
+                  }}
                   className="mt-1 h-10 w-full rounded-md border bg-background px-3 text-sm"
                 >
                   <option value="none">ক্যাটাগরি নেই (Uncategorized)</option>

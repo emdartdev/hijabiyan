@@ -7,6 +7,7 @@ export type CartItem = {
   sizeBn?: string | null;
   unitPriceBdt: number;
   qty: number;
+  categorySlug?: string | null;
 };
 
 const CART_KEY = "hijabiyan_cart_v1";

@@ -49,7 +49,7 @@ export default function SiteFooter() {
           <div>
             <img src={logo} alt="হিজাবিয়ান" className="h-10 w-auto" loading="lazy" />
             <p className="mt-2 text-sm text-muted-foreground">
-              বাংলাদেশে সাশ্রয়ী দামে হিজাব ও মডেস্ট ফ্যাশন—সহজ অর্ডার, ক্যাশ অন ডেলিভারি।
+              বাংলাদেশে সাশ্রয়ী দামে হিজাব ও মডেস্ট ফ্যাশন—সহজ অর্ডার, ক্যাশ অন ডেলিভারি। Hijabiyan একটি Mohima Fashion-এর প্রতিষ্ঠান।
             </p>
           </div>
 
