@@ -1,4 +1,5 @@
 import { formatBDT } from "@/lib/money";
+import { useNavigate } from "react-router-dom";
 import { NavLink } from "@/components/NavLink";
 import { convertDriveUrl } from "@/lib/image-utils";
 import { upsertCartItem } from "@/lib/cart";
@@ -13,6 +14,9 @@ export type ProductCardModel = {
   discount_price_bdt: number | null;
   compare_at_price_bdt: number | null;
   image_url: string | null;
+  categorySlug?: string | null;
+  price_tiers?: { min_qty: number; unit_price: number }[] | null;
+  gift_rules?: { min_qty: number; gift_name: string }[] | null;
 };
 
 type Props = {
@@ -21,12 +25,13 @@ type Props = {
 
 export default function ProductCard({ p }: Props) {
   const { toast } = useToast();
+  const navigate = useNavigate();
   
   const displayPrice = p.discount_price_bdt ?? p.price_bdt;
   const hasDiscount = p.discount_price_bdt !== null && p.discount_price_bdt < p.price_bdt;
   const hasComparePrice = !hasDiscount && p.compare_at_price_bdt !== null && p.compare_at_price_bdt > p.price_bdt;
 
-  const handleAddToCart = (e: React.MouseEvent) => {
+  const handleOrderNow = (e: React.MouseEvent) => {
     e.preventDefault(); // Prevent navigation
     e.stopPropagation();
     
@@ -38,18 +43,42 @@ export default function ProductCard({ p }: Props) {
       colorBn: null,
       sizeBn: null,
       unitPriceBdt: displayPrice,
+      baseUnitPriceBdt: p.price_bdt,
+      price_tiers: p.price_tiers,
       qty: 1,
+      categorySlug: p.categorySlug,
+    });
+    
+    navigate("/checkout");
+  };
+
+  const handleAddToCart = (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    
+    upsertCartItem({
+      productId: p.id,
+      variantId: null,
+      titleBn: p.title_bn,
+      imageUrl: p.image_url,
+      colorBn: null,
+      sizeBn: null,
+      unitPriceBdt: displayPrice,
+      baseUnitPriceBdt: p.price_bdt,
+      price_tiers: p.price_tiers,
+      qty: 1,
+      categorySlug: p.categorySlug,
     });
     
     toast({ 
-      title: "কার্টে যোগ হয়েছে", 
-      description: `${p.title_bn} কার্টে যোগ করা হয়েছে।` 
+      title: "কার্টে যোগ হয়েছে", 
+      description: `${p.title_bn} কার্টে যোগ করা হয়েছে।` 
     });
   };
 
   return (
     <NavLink
-      to={`/product/${p.slug}`}
+      to={`/p/${p.slug}`}
       className="group block overflow-hidden rounded-lg border bg-card transition-all hover:shadow-lg hover:border-primary/20"
     >
       <div className="aspect-[3/4] overflow-hidden bg-muted">
@@ -86,20 +115,20 @@ export default function ProductCard({ p }: Props) {
         
         <div className="space-y-2">
           <SiteButton 
-            onClick={handleAddToCart}
+            onClick={handleOrderNow}
             className="w-full"
             size="sm"
           >
-            কার্টে যোগ করুন
+            অর্ডার করুন
           </SiteButton>
           
           <SiteButton 
-            asChild
+            onClick={handleAddToCart}
             variant="outline"
             className="w-full"
             size="sm"
           >
-            <NavLink to={`/product/${p.slug}`}>বিস্তারিত দেখুন</NavLink>
+            কার্টে এড করুন
           </SiteButton>
         </div>
       </div>

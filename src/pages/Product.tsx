@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { useParams } from "react-router-dom";
+import { useParams, useNavigate } from "react-router-dom";
 import SiteHeader from "@/components/site/SiteHeader";
 import SiteFooter from "@/components/site/SiteFooter";
 import { supabase } from "@/integrations/supabase/client";
@@ -18,11 +18,16 @@ type Variant = {
   size_bn: string | null;
   price_bdt: number | null;
   stock_qty: number;
+  price_tiers?: { min_qty: number; unit_price: number }[];
+  gift_rules?: { min_qty: number; gift_name: string }[];
 };
 
 export default function Product() {
   const { productSlug } = useParams();
+  const navigate = useNavigate();
   const { toast } = useToast();
+
+  const [qty, setQty] = useState(1);
 
   const [p, setP] = useState<any | null>(null);
   const [images, setImages] = useState<{ image_url: string; alt_bn: string | null; sort_order: number }[]>([]);
@@ -42,15 +47,20 @@ export default function Product() {
 
       const { data: prod } = await supabase
         .from("products")
-        .select("id, slug, title_bn, description_bn, return_policy_bn, delivery_info_bn, price_bdt, discount_price_bdt, compare_at_price_bdt, category_id")
+        .select("id, slug, title_bn, description_bn, return_policy_bn, delivery_info_bn, price_bdt, discount_price_bdt, compare_at_price_bdt, category_id, price_tiers, gift_rules, categories(slug)")
         .eq("slug", productSlug)
         .maybeSingle();
 
       if (!prod) {
         if (!ignore) setP(null);
+        console.log("Product not found for slug:", productSlug);
         setLoading(false);
         return;
       }
+
+      console.log("Loaded product data:", prod);
+      console.log("Price Tiers:", prod.price_tiers);
+      console.log("Gift Rules:", prod.gift_rules);
 
       const [{ data: imgs }, { data: vars }] = await Promise.all([
         supabase.from("product_images").select("image_url, alt_bn, sort_order").eq("product_id", prod.id).order("sort_order", { ascending: true }),
@@ -66,7 +76,7 @@ export default function Product() {
 
       const { data: rel } = await supabase
         .from("products")
-        .select("id, slug, title_bn, price_bdt, discount_price_bdt, compare_at_price_bdt, product_images(image_url, sort_order)")
+        .select("id, slug, title_bn, price_bdt, discount_price_bdt, compare_at_price_bdt, price_tiers, gift_rules, product_images(image_url, sort_order), categories(slug)")
         .eq("category_id", prod.category_id)
         .neq("id", prod.id)
         .eq("is_active", true)
@@ -80,6 +90,9 @@ export default function Product() {
         price_bdt: r.price_bdt,
         discount_price_bdt: r.discount_price_bdt,
         compare_at_price_bdt: r.compare_at_price_bdt,
+        price_tiers: r.price_tiers,
+        gift_rules: r.gift_rules,
+        categorySlug: r.categories?.slug ?? null,
         image_url: (r.product_images ?? []).sort((a: any, b: any) => (a.sort_order ?? 0) - (b.sort_order ?? 0))[0]?.image_url ?? null,
       }));
       if (!ignore) setRelated(relatedMapped);
@@ -95,9 +108,10 @@ export default function Product() {
   const priceBdt = selectedVariant?.price_bdt ?? p?.price_bdt;
   const mainImage = images[0]?.image_url ?? null;
 
-  const addToCart = () => {
+  const orderNow = () => {
     if (!p) return;
     const v = selectedVariant;
+    const currentPrice = getEffectiveUnitPrice();
     upsertCartItem({
       productId: p.id,
       variantId: v?.id ?? null,
@@ -105,11 +119,27 @@ export default function Product() {
       imageUrl: mainImage,
       colorBn: v?.color_bn ?? null,
       sizeBn: v?.size_bn ?? null,
-      unitPriceBdt: Number(priceBdt ?? 0),
-      qty: 1,
+      unitPriceBdt: currentPrice,
+      baseUnitPriceBdt: Number(priceBdt ?? 0),
+      price_tiers: p.price_tiers,
+      qty: qty,
+      categorySlug: p.categories?.slug ?? null,
     });
-    toast({ title: "কার্টে যোগ হয়েছে", description: "আপনার পণ্যটি কার্টে যোগ করা হয়েছে।" });
+    navigate("/checkout");
   };
+
+  const getEffectiveUnitPrice = () => {
+    return Number(selectedVariant?.price_bdt ?? p?.price_bdt ?? 0);
+  };
+
+  const getEarnedGifts = () => {
+    if (!p?.gift_rules) return [];
+    return p.gift_rules.filter(r => qty >= r.min_qty);
+  };
+
+  const totalPrice = useMemo(() => {
+    return getEffectiveUnitPrice() * qty;
+  }, [qty, selectedVariant, p]);
 
   return (
     <div className="min-h-screen bg-background">
@@ -162,6 +192,51 @@ export default function Product() {
                 )}
               </div>
 
+
+              {p.gift_rules && p.gift_rules.length > 0 && (
+                <div className="mt-6 flex flex-wrap gap-2">
+                  {p.gift_rules.map((r, i) => (
+                    <div 
+                      key={i} 
+                      className={`flex items-center gap-2 rounded-full border px-4 py-1.5 text-xs font-medium transition-all ${qty >= r.min_qty ? 'border-amber-500 bg-amber-50 text-amber-700' : 'border-muted bg-muted/30 text-muted-foreground'}`}
+                    >
+                      <span className="text-sm">🎁</span>
+                      {r.gift_name}
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              <div className="mt-8 space-y-4">
+                <div className="flex items-center gap-4">
+                  <div className="text-sm font-medium">পরিমাণ:</div>
+                  <div className="flex h-10 w-32 items-center overflow-hidden rounded-md border">
+                    <button 
+                      onClick={() => setQty(Math.max(1, qty - 1))}
+                      className="flex h-full w-10 items-center justify-center bg-muted hover:bg-muted-foreground/10 transition-colors"
+                    >
+                      -
+                    </button>
+                    <div className="flex flex-1 items-center justify-center font-semibold">{qty}</div>
+                    <button 
+                      onClick={() => setQty(qty + 1)}
+                      className="flex h-full w-10 items-center justify-center bg-muted hover:bg-muted-foreground/10 transition-colors"
+                    >
+                      +
+                    </button>
+                  </div>
+                </div>
+                
+                <div className="flex items-center gap-2 text-lg">
+                  <span className="font-medium">মোট:</span>
+                  <div className="flex flex-col items-end">
+                    <span className="font-bold text-primary text-3xl leading-none">
+                      {formatBDT(totalPrice)}
+                    </span>
+                  </div>
+                </div>
+              </div>
+
               {variants.length ? (
                 <Card className="mt-6 p-4">
                   <div className="text-sm font-medium">ভ্যারিয়েন্ট</div>
@@ -180,8 +255,8 @@ export default function Product() {
               ) : null}
 
               <div className="mt-6 flex gap-3">
-                <SiteButton onClick={addToCart} size="lg">
-                  কার্টে যোগ করুন
+                <SiteButton onClick={orderNow} size="lg">
+                  অর্ডার করুন
                 </SiteButton>
                 <SiteButton asChild size="lg" variant="secondary">
                   <a href="/cart">কার্ট দেখুন</a>
@@ -217,7 +292,7 @@ export default function Product() {
         {related.length ? (
           <section className="mt-14">
             <h2 className="text-xl font-semibold">সম্পর্কিত পণ্য</h2>
-            <div className="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+            <div className="mt-6 grid gap-4 grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
               {related.map((rp) => (
                 <ProductCard key={rp.id} p={rp} />
               ))}

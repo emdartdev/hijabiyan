@@ -21,6 +21,9 @@ function mapProductRow(r: any): (ProductCardModel & { category_id: string; creat
     price_bdt: r.price_bdt,
     discount_price_bdt: r.discount_price_bdt,
     compare_at_price_bdt: r.compare_at_price_bdt,
+    price_tiers: r.price_tiers,
+    gift_rules: r.gift_rules,
+    categorySlug: r.categories?.slug ?? null,
     image_url:
       (r.product_images ?? []).sort((a: any, b: any) => (a.sort_order ?? 0) - (b.sort_order ?? 0))[0]?.image_url ?? null,
     category_id: String(r.category_id ?? ""),
@@ -43,7 +46,7 @@ export default function CategoryWiseProducts() {
           supabase.from("categories").select("id, slug, name_bn, hero_rank").order("hero_rank", { ascending: false }).limit(50),
           supabase
             .from("products")
-            .select("id, slug, title_bn, price_bdt, discount_price_bdt, compare_at_price_bdt, category_id, created_at, product_images(image_url, sort_order)")
+            .select("id, slug, title_bn, price_bdt, discount_price_bdt, compare_at_price_bdt, category_id, created_at, price_tiers, gift_rules, product_images(image_url, sort_order), categories(slug)")
             .eq("is_active", true)
             .order("created_at", { ascending: false })
             .limit(1000),
@@ -118,7 +121,7 @@ export default function CategoryWiseProducts() {
                       <NavLink to={`/catalog/${cat.slug}`}>সব দেখুন</NavLink>
                     </SiteButton>
                   </div>
-                  <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+                  <div className="grid gap-4 grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
                     {list.map((p) => (
                       <ProductCard key={p.id} p={p} />
                     ))}

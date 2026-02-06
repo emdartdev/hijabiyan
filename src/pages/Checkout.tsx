@@ -5,7 +5,7 @@ import SiteButton from "@/components/site/SiteButton";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { cartSubtotal, clearCart, readCart, type CartItem } from "@/lib/cart";
+import { cartSubtotal, cartBaseSubtotal, cartTotalQty, clearCart, readCart, type CartItem } from "@/lib/cart";
 import { formatBDT } from "@/lib/money";
 import { useNavigate } from "react-router-dom";
 import { SUPABASE_URL } from "@/lib/supabaseUrl";
@@ -42,59 +42,26 @@ export default function Checkout() {
   const [phone, setPhone] = useState("");
   const [address, setAddress] = useState("");
   const [notes, setNotes] = useState("");
-  const [couponCode, setCouponCode] = useState("");
-  const [discountBdt, setDiscountBdt] = useState(0);
-  const [couponMessage, setCouponMessage] = useState<string | null>(null);
-  const [couponApplying, setCouponApplying] = useState(false);
   const [loading, setLoading] = useState(false);
 
   const [deliveryArea, setDeliveryArea] = useState<string>("");
   const [deliveryFee, setDeliveryFee] = useState<number>(0);
 
   useEffect(() => {
-    setItems(readCart());
+    const cartItems = readCart();
+    setItems(cartItems);
   }, []);
 
+  const totalQty = useMemo(() => cartTotalQty(items), [items]);
   const subtotal = useMemo(() => cartSubtotal(items), [items]);
-  const total = Math.max(0, subtotal + deliveryFee - Math.max(0, discountBdt));
+  const baseSubtotal = useMemo(() => cartBaseSubtotal(items), [items]);
+  const total = Math.max(0, subtotal + deliveryFee);
 
   const handleDeliveryChange = (optionId: string) => {
     const option = DELIVERY_OPTIONS.find((o) => o.id === optionId);
     if (option) {
       setDeliveryArea(option.id);
       setDeliveryFee(option.cost);
-    }
-  };
-
-  const applyCoupon = async () => {
-    const code = couponCode.trim();
-    if (!code) {
-      setDiscountBdt(0);
-      setCouponMessage(null);
-      return;
-    }
-    setCouponApplying(true);
-    try {
-      const res = await fetch(`${SUPABASE_URL}/functions/v1/coupon-preview`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ code, subtotalBdt: subtotal }),
-      });
-      const data = (await res.json()) as any;
-      if (!res.ok) throw new Error(data?.message || "কুপন যাচাই হয়নি।");
-      if (!data?.ok) {
-        setDiscountBdt(0);
-        setCouponMessage(data?.message || "কুপন সঠিক নয়।");
-        return;
-      }
-      const d = Math.max(0, Number(data?.discountBdt ?? 0));
-      setDiscountBdt(d);
-      setCouponMessage(d > 0 ? `কুপন অ্যাপ্লাই হয়েছে (-${formatBDT(d)})` : "কুপন অ্যাপ্লাই হয়েছে");
-    } catch (e: any) {
-      setDiscountBdt(0);
-      setCouponMessage(e?.message ?? "কুপন যাচাই হয়নি।");
-    } finally {
-      setCouponApplying(false);
     }
   };
 
@@ -122,7 +89,6 @@ export default function Checkout() {
           customerPhone: phone.trim(),
           deliveryAddressBn: address.trim(),
           notesBn: notes.trim() || null,
-          couponCode: couponCode.trim() || null,
           items: items.map((it) => ({ productId: it.productId, variantId: it.variantId ?? null, qty: it.qty })),
           deliveryFee,
         }),
@@ -199,11 +165,29 @@ export default function Checkout() {
               </div>
             </Card>
 
-            <Card className="p-5">
-              <div className="text-lg font-semibold">পলিসি</div>
-              <p className="mt-2 text-sm text-muted-foreground">
-                অর্ডার কনফার্ম করার মাধ্যমে আপনি আমাদের <a className="text-primary underline" href="/terms">শর্তাবলী</a> এবং
-                <a className="ml-1 text-primary underline" href="/returns">রিটার্ন পলিসি</a> মেনে নিচ্ছেন।
+            <Card className="p-5 space-y-6">
+              <div>
+                <div className="text-lg font-semibold flex items-center gap-2">
+                  <span>🚚</span> ডেলিভারি তথ্য
+                </div>
+                <ul className="mt-3 text-sm text-muted-foreground space-y-2 list-disc pl-4">
+                  <li>আমরা সারা বাংলাদেশে হোম ডেলিভারি সার্ভিস প্রদান করি।</li>
+                  <li>ঢাকা সিটির ভিতরে ডেলিভারি হতে সাধারণত ১–২ কার্যদিবস সময় লাগে।</li>
+                  <li>ঢাকা সিটির বাইরে ডেলিভারি হতে ২–৫ কার্যদিবস সময় লাগতে পারে।</li>
+                </ul>
+              </div>
+              <div className="pt-6 border-t">
+                <div className="text-lg font-semibold flex items-center gap-2">
+                  <span>🔄</span> রিটার্ন ও রিফান্ড পলিসি
+                </div>
+                <ul className="mt-3 text-sm text-muted-foreground space-y-2 list-disc pl-4">
+                  <li>পণ্য গ্রহণের সময় ডেলিভারি ম্যানের উপস্থিতিতেই পণ্য চেক করে নিতে হবে।</li>
+                  <li>ডেলিভারি সম্পন্ন হওয়ার পর বা পরবর্তীতে সমস্যা জানালে রিটার্ন বা রিফান্ড গ্রহণযোগ্য হবে না।</li>
+                  <li>পণ্য পছন্দ না হলে বা নিতে না চাইলে ডেলিভারি চার্জ পরিশোধ করে পণ্য রিটার্ন করতে পারবেন।</li>
+                </ul>
+              </div>
+              <p className="mt-6 text-xs text-muted-foreground pt-4 border-t">
+                অর্ডার কনফার্ম করার মাধ্যমে আপনি আমাদের <a className="text-primary underline" href="/terms">শর্তাবলী</a> মেনে নিচ্ছেন।
               </p>
             </Card>
           </section>
@@ -211,30 +195,16 @@ export default function Checkout() {
           <aside>
             <Card className="p-5">
               <div className="text-sm text-muted-foreground">সাবটোটাল</div>
-              <div className="mt-1 text-lg font-semibold">{formatBDT(subtotal)}</div>
-
-              <div className="mt-4">
-                <label className="text-xs text-muted-foreground">কুপন কোড (ঐচ্ছিক)</label>
-                <div className="mt-1 flex gap-2">
-                  <Input value={couponCode} onChange={(e) => setCouponCode(e.target.value)} placeholder="যেমন: SAVE50" />
-                  <SiteButton type="button" variant="secondary" onClick={applyCoupon} disabled={couponApplying || !subtotal}>
-                    {couponApplying ? "চেক..." : "Apply"}
-                  </SiteButton>
-                </div>
-                {couponMessage ? <div className="mt-2 text-xs text-muted-foreground">{couponMessage}</div> : null}
-              </div>
-
-              <div className="mt-3 text-sm text-muted-foreground">ডিসকাউন্ট</div>
-              <div className="mt-1 font-medium">{discountBdt ? `-${formatBDT(discountBdt)}` : formatBDT(0)}</div>
+              <div className="mt-1 text-lg font-semibold">{formatBDT(baseSubtotal)}</div>
 
               <div className="mt-3 text-sm text-muted-foreground">ডেলিভারি ফি</div>
               <div className="mt-1 font-medium">{deliveryFee ? formatBDT(deliveryFee) : "অর্ডার কনফার্মের পরে জানানো হবে"}</div>
               <div className="mt-4 border-t pt-4">
-                <div className="text-sm text-muted-foreground">মোট</div>
-                <div className="mt-1 text-2xl font-semibold">{formatBDT(total)}</div>
+                <div className="text-sm text-muted-foreground font-medium">সর্বমোট</div>
+                <div className="mt-1 text-2xl font-bold text-primary">{formatBDT(total)}</div>
               </div>
               <SiteButton className="mt-5 w-full" size="lg" onClick={placeOrder} disabled={loading}>
-                {loading ? "অর্ডার হচ্ছে..." : "অর্ডার কনফার্ম করুন"}
+                {loading ? "অর্ডার হচ্ছে..." : "অর্ডার করুন এখনই"}
               </SiteButton>
             </Card>
           </aside>

@@ -8,6 +8,8 @@ export type CartItem = {
   unitPriceBdt: number;
   qty: number;
   categorySlug?: string | null;
+  baseUnitPriceBdt: number;
+  price_tiers?: { min_qty: number; unit_price: number }[] | null;
 };
 
 const CART_KEY = "hijabiyan_cart_v1";
@@ -32,6 +34,21 @@ export function writeCart(items: CartItem[]) {
 
 export function cartSubtotal(items: CartItem[]) {
   return items.reduce((sum, it) => sum + it.unitPriceBdt * it.qty, 0);
+}
+
+export function cartTotalSavings(items: CartItem[]) {
+  return items.reduce((sum, it) => {
+    const savingsPerUnit = Math.max(0, it.baseUnitPriceBdt - it.unitPriceBdt);
+    return sum + savingsPerUnit * it.qty;
+  }, 0);
+}
+
+export function cartBaseSubtotal(items: CartItem[]) {
+  return items.reduce((sum, it) => sum + it.baseUnitPriceBdt * it.qty, 0);
+}
+
+export function cartTotalQty(items: CartItem[]) {
+  return items.reduce((sum, it) => sum + it.qty, 0);
 }
 
 export function upsertCartItem(next: CartItem) {
@@ -60,7 +77,8 @@ export function updateCartQty(productId: string, variantId: string | null | unde
     .map((it) => {
       const itKey = `${it.productId}::${it.variantId ?? ""}`;
       if (itKey !== key) return it;
-      return { ...it, qty };
+      
+      return { ...it, qty, unitPriceBdt: it.baseUnitPriceBdt };
     });
   writeCart(next);
   return next;

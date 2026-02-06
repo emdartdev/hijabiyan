@@ -30,7 +30,7 @@ export default function Cart() {
       <SiteHeader />
       <main className="container py-10">
         <h1 className="text-2xl font-bold tracking-tight">আপনার কার্ট</h1>
-        <p className="mt-1 text-sm text-muted-foreground">পরিমাণ ঠিক করুন, তারপর অর্ডার কনফার্ম করুন।</p>
+        <p className="mt-1 text-sm text-muted-foreground">পরিমাণ ঠিক করুন, তারপর অর্ডার করুন এখনই।</p>
 
         <div className="mt-8 grid gap-6 lg:grid-cols-[1fr_360px]">
           <div className="space-y-3">
@@ -44,7 +44,16 @@ export default function Cart() {
                     <div className="min-w-0 flex-1">
                       <div className="truncate font-medium">{it.titleBn}</div>
                       <div className="mt-1 text-xs text-muted-foreground">{[it.colorBn, it.sizeBn].filter(Boolean).join(" • ")}</div>
-                      <div className="mt-2 text-sm font-semibold">{formatBDT(it.unitPriceBdt)}</div>
+                      <div className="mt-2 flex items-center gap-2">
+                        {it.baseUnitPriceBdt > it.unitPriceBdt ? (
+                          <>
+                            <span className="text-xs text-muted-foreground line-through opacity-60">{formatBDT(it.baseUnitPriceBdt)}</span>
+                            <span className="text-sm font-bold text-primary">{formatBDT(it.unitPriceBdt)}</span>
+                          </>
+                        ) : (
+                          <span className="text-sm font-semibold">{formatBDT(it.unitPriceBdt)}</span>
+                        )}
+                      </div>
                       <div className="mt-3 flex items-center gap-2">
                         <SiteButton type="button" variant="secondary" size="sm" onClick={() => setQty(it, it.qty - 1)}>
                           −
@@ -54,7 +63,7 @@ export default function Cart() {
                           +
                         </SiteButton>
                         <SiteButton type="button" variant="ghost" size="sm" onClick={() => setQty(it, 0)} className="ml-auto">
-                          সরান
+                          ডিলিট
                         </SiteButton>
                       </div>
                     </div>
@@ -73,7 +82,7 @@ export default function Cart() {
               <div className="mt-1 text-xs text-muted-foreground">ডেলিভারি ফি চেকআউটে যোগ হবে (প্রযোজ্য হলে)।</div>
               <div className="mt-5 grid gap-2">
                 <Button asChild size="lg" disabled={!items.length}>
-                  <NavLink to="/checkout">চেকআউট</NavLink>
+                  <NavLink to="/checkout">অর্ডার করুন এখনই</NavLink>
                 </Button>
                 <Button asChild variant="secondary" size="lg">
                   <NavLink to="/catalog">আরও কেনাকাটা</NavLink>

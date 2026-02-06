@@ -64,15 +64,6 @@ export default function AdminShell({ title, children }: { title: string; childre
               >
                 কাস্টমার
               </NavLink>
-
-              <NavLink
-                to="/admin/marketing"
-                className={({ isActive }) =>
-                  ["rounded-md px-3 py-1.5 transition-colors", isActive ? "bg-secondary" : "hover:bg-secondary/50"].join(" ")
-                }
-              >
-                মার্কেটিং
-              </NavLink>
             </nav>
           </div>
 

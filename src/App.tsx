@@ -18,8 +18,8 @@ import AdminProducts from "./pages/admin/AdminProducts";
 import AdminOrders from "./pages/admin/AdminOrders";
 import AdminCategories from "./pages/admin/AdminCategories";
 import AdminCustomers from "./pages/admin/AdminCustomers";
-import AdminMarketing from "./pages/admin/AdminMarketing";
 import WhatsAppFab from "@/components/site/WhatsAppFab";
+import ScrollToTop from "@/components/site/ScrollToTop";
 
 const queryClient = new QueryClient();
 
@@ -29,6 +29,7 @@ const App = () => (
       <Toaster />
       <Sonner />
       <BrowserRouter>
+        <ScrollToTop />
         <WhatsAppFab />
         <Routes>
           <Route path="/" element={<Index />} />
@@ -49,7 +50,6 @@ const App = () => (
           <Route path="/admin/orders" element={<AdminOrders />} />
           <Route path="/admin/categories" element={<AdminCategories />} />
           <Route path="/admin/customers" element={<AdminCustomers />} />
-          <Route path="/admin/marketing" element={<AdminMarketing />} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
         </Routes>

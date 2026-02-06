@@ -46,7 +46,7 @@ export default function SiteHeader() {
       <div className="container flex h-16 items-center gap-3">
         <NavLink to="/" className="font-semibold tracking-tight" activeClassName="text-primary">
           <span className="flex items-center gap-2">
-            <img src={logo} alt="হিজাবিয়ান" className="h-8 w-auto" loading="eager" />
+            <img src={logo} alt="হিজাবিয়ান" className="h-10 md:h-12 w-auto" loading="eager" />
             <span className="sr-only">hijabiyan.shop</span>
           </span>
         </NavLink>

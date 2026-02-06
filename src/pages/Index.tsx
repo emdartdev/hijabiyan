@@ -5,7 +5,6 @@ import SiteButton from "@/components/site/SiteButton";
 import { Card } from "@/components/ui/card";
 import { NavLink } from "@/components/NavLink";
 import { usePageMeta } from "@/hooks/use-page-meta";
-import HomepageCouponPopup from "@/components/site/HomepageCouponPopup";
 import CategoryWiseProducts from "@/components/site/CategoryWiseProducts";
 import { supabase } from "@/integrations/supabase/client";
 
@@ -48,7 +47,6 @@ const Index = () => {
   return (
     <div className="min-h-screen bg-background">
       <SiteHeader />
-      <HomepageCouponPopup />
 
       <main>
         <section className="relative overflow-hidden border-b bg-gradient-to-b from-background to-secondary/20">
@@ -63,7 +61,7 @@ const Index = () => {
                 হিজাব ও মডেস্ট ফ্যাশন—<span className="text-primary italic">বাংলাদেশজুড়ে</span>
               </h1>
               <p className="mt-6 text-lg text-muted-foreground/90 leading-relaxed md:text-xl">
-                Hijabiyan.com একটি Mohima Fashion-এর প্রতিষ্ঠান। পছন্দের হিজাব, অর্না ও অ্যাক্সেসরিজ বেছে নিন—সহজ অর্ডার, ক্যাশ অন ডেলিভারি, আর অর্ডার ট্র্যাকিং।
+                Hijabiyan.shop একটি Mohima Fashion-এর প্রতিষ্ঠান। পছন্দের হিজাব, অর্না ও অ্যাক্সেসরিজ বেছে নিন—সহজ অর্ডার, ক্যাশ অন ডেলিভারি, আর অর্ডার ট্র্যাকিং।
               </p>
               <div className="mt-8 flex flex-wrap gap-4">
                 <SiteButton asChild size="lg" className="rounded-full px-8 shadow-lg shadow-primary/20 hover:shadow-primary/30 transition-all">

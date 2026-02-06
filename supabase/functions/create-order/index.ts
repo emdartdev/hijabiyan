@@ -95,7 +95,7 @@ Deno.serve(async (req) => {
   const productIds = [...new Set(items.map((it) => it.productId))];
   const { data: products, error: prodErr } = await admin
     .from("products")
-    .select("id, title_bn, price_bdt, is_active")
+    .select("id, title_bn, price_bdt, is_active, price_tiers")
     .in("id", productIds);
   if (prodErr) return json(500, { ok: false, message: "Failed to load products" });
 
