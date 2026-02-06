@@ -9,6 +9,7 @@ export type ProductCardModel = {
   slug: string;
   title_bn: string;
   price_bdt: number;
+  discount_price_bdt: number | null;
   compare_at_price_bdt: number | null;
   image_url?: string | null;
 };
@@ -29,14 +30,29 @@ export default function ProductCard({ p }: { p: ProductCardModel }) {
         </div>
       </NavLink>
       <CardContent className="space-y-2 p-4">
-        <div className="line-clamp-2 text-sm font-medium leading-snug">{p.title_bn}</div>
-        <div className="flex items-center gap-2">
-          <div className="font-semibold">{formatBDT(p.price_bdt)}</div>
-          {discount ? (
-            <div className="text-xs text-muted-foreground line-through">{formatBDT(p.compare_at_price_bdt as number)}</div>
-          ) : null}
+        <div className="mt-3">
+        <h3 className="text-sm font-medium tracking-tight text-foreground/90 line-clamp-1 group-hover:text-primary transition-colors">{p.title_bn}</h3>
+        <div className="mt-2 flex items-center gap-2">
+          {p.discount_price_bdt ? (
+            <>
+              <span className="text-sm text-muted-foreground line-through opacity-70">
+                {formatBDT(p.price_bdt)}
+              </span>
+              <span className="text-base font-bold text-primary">{formatBDT(p.discount_price_bdt)}</span>
+            </>
+          ) : p.compare_at_price_bdt && p.compare_at_price_bdt > p.price_bdt ? (
+            <>
+              <span className="text-sm text-muted-foreground line-through opacity-70">
+                {formatBDT(p.compare_at_price_bdt)}
+              </span>
+              <span className="text-base font-bold text-primary">{formatBDT(p.price_bdt)}</span>
+            </>
+          ) : (
+            <span className="text-base font-bold text-primary">{formatBDT(p.price_bdt)}</span>
+          )}
         </div>
-        <SiteButton asChild size="sm" className="w-full">
+      </div>
+  <SiteButton asChild size="sm" className="w-full">
           <NavLink to={`/p/${p.slug}`}>বিস্তারিত দেখুন</NavLink>
         </SiteButton>
       </CardContent>

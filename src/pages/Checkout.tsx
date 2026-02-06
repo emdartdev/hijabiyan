@@ -26,8 +26,7 @@ type CreateOrderResponse = {
 };
 
 const DELIVERY_OPTIONS = [
-  { id: "dhaka", label: "ঢাকা মেট্রো সিটি", cost: 60 },
-  { id: "demra", label: "ডেমরা, কামরাঙ্গীরচর", cost: 80 },
+  { id: "dhaka", label: "ঢাকা মেট্রো সিটি", cost: 70 },
   { id: "savar", label: "সাভার, গাজীপুর, কেরানীগঞ্জ, নারায়ণগঞ্জ", cost: 100 },
   { id: "other", label: "অন্যান্য জেলা, উপজেলা, বিভাগ", cost: 130 },
 ];

@@ -472,7 +472,7 @@ export default function AdminMarketing() {
                 </div>
                 <div>
                   <label className="text-xs text-muted-foreground">Body (বাংলা)</label>
-                  <Textarea value={popup.body_bn ?? ""} onChange={(e) => setPopup((p) => (p ? { ...p, body_bn: e.target.value } : p))} placeholder="যেমন: SAVE50 কোডে ৫০ টাকা ছাড়..." />
+                  <Textarea value={popup.body_bn ?? ""} onChange={(e) => setPopup((p) => (p ? { ...p, body_bn: e.target.value } : p))} placeholder="যেমন: SAVE50 কোডে 50 টাকা ছাড়..." />
                 </div>
                 <div>
                   <label className="text-xs text-muted-foreground">Link URL (optional)</label>

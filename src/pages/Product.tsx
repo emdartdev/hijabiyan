@@ -42,7 +42,7 @@ export default function Product() {
 
       const { data: prod } = await supabase
         .from("products")
-        .select("id, slug, title_bn, description_bn, return_policy_bn, delivery_info_bn, price_bdt, compare_at_price_bdt, category_id")
+        .select("id, slug, title_bn, description_bn, return_policy_bn, delivery_info_bn, price_bdt, discount_price_bdt, compare_at_price_bdt, category_id")
         .eq("slug", productSlug)
         .maybeSingle();
 
@@ -66,7 +66,7 @@ export default function Product() {
 
       const { data: rel } = await supabase
         .from("products")
-        .select("id, slug, title_bn, price_bdt, compare_at_price_bdt, product_images(image_url, sort_order)")
+        .select("id, slug, title_bn, price_bdt, discount_price_bdt, compare_at_price_bdt, product_images(image_url, sort_order)")
         .eq("category_id", prod.category_id)
         .neq("id", prod.id)
         .eq("is_active", true)
@@ -78,6 +78,7 @@ export default function Product() {
         slug: r.slug,
         title_bn: r.title_bn,
         price_bdt: r.price_bdt,
+        discount_price_bdt: r.discount_price_bdt,
         compare_at_price_bdt: r.compare_at_price_bdt,
         image_url: (r.product_images ?? []).sort((a: any, b: any) => (a.sort_order ?? 0) - (b.sort_order ?? 0))[0]?.image_url ?? null,
       }));
@@ -141,11 +142,24 @@ export default function Product() {
 
             <div>
               <h1 className="text-2xl font-bold tracking-tight md:text-3xl">{p.title_bn}</h1>
-              <div className="mt-3 flex items-center gap-3">
-                <div className="text-xl font-semibold">{formatBDT(priceBdt)}</div>
-                {p.compare_at_price_bdt && p.compare_at_price_bdt > p.price_bdt ? (
-                  <div className="text-sm text-muted-foreground line-through">{formatBDT(p.compare_at_price_bdt)}</div>
-                ) : null}
+              <div className="mt-4 flex items-center gap-4">
+                {p.discount_price_bdt ? (
+                  <>
+                    <div className="text-lg text-muted-foreground line-through opacity-60">
+                      {formatBDT(p.price_bdt)}
+                    </div>
+                    <div className="text-3xl font-bold text-primary">{formatBDT(p.discount_price_bdt)}</div>
+                  </>
+                ) : p.compare_at_price_bdt && p.compare_at_price_bdt > p.price_bdt ? (
+                  <>
+                    <div className="text-lg text-muted-foreground line-through opacity-60">
+                      {formatBDT(p.compare_at_price_bdt)}
+                    </div>
+                    <div className="text-3xl font-bold text-primary">{formatBDT(p.price_bdt)}</div>
+                  </>
+                ) : (
+                  <div className="text-3xl font-bold text-primary">{formatBDT(priceBdt)}</div>
+                )}
               </div>
 
               {variants.length ? (
@@ -184,12 +198,15 @@ export default function Product() {
               <section className="mt-8 grid gap-4">
                 <Card className="p-4">
                   <div className="font-medium">ডেলিভারি তথ্য</div>
-                  <p className="mt-2 text-sm text-muted-foreground whitespace-pre-line">{p.delivery_info_bn ?? "ঢাকার ভিতরে ও বাহিরে ডেলিভারি পাওয়া যাবে।"}</p>
+                  <p className="mt-2 text-sm text-muted-foreground whitespace-pre-line">
+                    {p.delivery_info_bn ??
+                      "ঢাকার ভিতরে ও ঢাকার বাইরে ডেলিভারি সুবিধা উপলব্ধ। পণ্য গ্রহণের সময় ডেলিভারি ম্যানের উপস্থিতিতেই ভালোভাবে চেক করে নেবেন। পণ্যে কোনো সমস্যা থাকলে সঙ্গে সঙ্গে জানাতে হবে। ডেলিভারি সম্পন্ন হওয়ার পর বা পরবর্তীতে সমস্যা জানালে রিটার্ন বা রিফান্ড গ্রহণযোগ্য হবে না।"}
+                  </p>
                 </Card>
                 <Card className="p-4">
                   <div className="font-medium">রিটার্ন পলিসি</div>
                   <p className="mt-2 text-sm text-muted-foreground whitespace-pre-line">
-                    {p.return_policy_bn ?? "ডেলিভারি পাওয়ার পর নির্দিষ্ট সময়ের মধ্যে রিটার্ন করা যাবে (শর্ত প্রযোজ্য)।"}
+                    {p.return_policy_bn ?? "পণ্য গ্রহণের সময় ডেলিভারি ম্যানের উপস্থিতিতেই ভালোভাবে চেক করে নেবেন। পণ্যে কোনো সমস্যা থাকলে সঙ্গে সঙ্গে জানাতে হবে। ডেলিভারি সম্পন্ন হওয়ার পর বা পরবর্তীতে সমস্যা জানালে রিটার্ন বা রিফান্ড গ্রহণযোগ্য হবে না।"}
                   </p>
                 </Card>
               </section>

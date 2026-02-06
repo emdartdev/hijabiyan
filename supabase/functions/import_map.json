@@ -1,0 +1,7 @@
+{
+    "imports": {
+        "supabase": "https://esm.sh/@supabase/supabase-js@2?target=deno&dts",
+        "@supabase/supabase-js": "https://esm.sh/@supabase/supabase-js@2?target=deno&dts",
+        "std/": "https://deno.land/std@0.177.0/"
+    }
+}

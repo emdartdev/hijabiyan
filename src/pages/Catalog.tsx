@@ -45,7 +45,7 @@ export default function Catalog() {
 
       let query = supabase
         .from("products")
-        .select("id, slug, title_bn, price_bdt, compare_at_price_bdt, product_images(image_url, sort_order)")
+        .select("id, slug, title_bn, price_bdt, discount_price_bdt, compare_at_price_bdt, product_images(image_url, sort_order)")
         .eq("is_active", true)
         .order("created_at", { ascending: false })
         .limit(60);
@@ -64,6 +64,7 @@ export default function Catalog() {
         slug: r.slug,
         title_bn: r.title_bn,
         price_bdt: r.price_bdt,
+        discount_price_bdt: r.discount_price_bdt,
         compare_at_price_bdt: r.compare_at_price_bdt,
         image_url: (r.product_images ?? []).sort((a: any, b: any) => (a.sort_order ?? 0) - (b.sort_order ?? 0))[0]?.image_url ?? null,
       })) as ProductCardModel[];

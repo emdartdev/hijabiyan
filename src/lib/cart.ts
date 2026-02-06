@@ -10,6 +10,7 @@ export type CartItem = {
 };
 
 const CART_KEY = "hijabiyan_cart_v1";
+export const CART_EVENT = "hijabiyan_cart_updated";
 
 export function readCart(): CartItem[] {
   try {
@@ -25,6 +26,7 @@ export function readCart(): CartItem[] {
 
 export function writeCart(items: CartItem[]) {
   localStorage.setItem(CART_KEY, JSON.stringify(items));
+  window.dispatchEvent(new Event(CART_EVENT));
 }
 
 export function cartSubtotal(items: CartItem[]) {

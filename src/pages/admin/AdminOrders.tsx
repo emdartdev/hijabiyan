@@ -16,6 +16,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { deleteOrder, getOrderDetails, listOrders, patchOrder, type AdminOrderDetails, type AdminOrderItem, type AdminOrderListRow } from "@/pages/admin/orders/adminOrdersApi";
 import { OrderInvoicePrint } from "@/pages/admin/orders/OrderInvoicePrint";
 import { supabase } from "@/integrations/supabase/client";
+import FraudBreakdown from "@/components/admin/FraudBreakdown";
 
 type OrderStatus = Database["public"]["Enums"]["order_status"];
 
@@ -59,6 +60,7 @@ export default function AdminOrders() {
   const [deliveryPartnerName, setDeliveryPartnerName] = useState("");
   const [deliveryPartnerPhone, setDeliveryPartnerPhone] = useState("");
   const [editAddress, setEditAddress] = useState("");
+  const [editDeliveryFee, setEditDeliveryFee] = useState<number>(0);
   const [adminNotes, setAdminNotes] = useState("");
   const [busy, setBusy] = useState(false);
 
@@ -117,6 +119,7 @@ export default function AdminOrders() {
         setEditDeliveryStatus(order.delivery_status ?? "pending");
         setEditAddress(order.delivery_address_bn);
         setAdminNotes(order.notes_bn ?? "");
+        setEditDeliveryFee(order.delivery_fee_bdt);
         setDeliveryPartnerName(order.delivery_partner_name ?? "");
         setDeliveryPartnerPhone(order.delivery_partner_phone ?? "");
       }
@@ -146,13 +149,19 @@ export default function AdminOrders() {
         notes_bn: adminNotes.trim() || null,
         delivery_partner_name: deliveryPartnerName.trim() || null,
         delivery_partner_phone: deliveryPartnerPhone.trim() || null,
+        delivery_fee_bdt: editDeliveryFee,
       });
       toast({ title: "আপডেট সফল" });
       await loadOrders();
       setSelectedId(null);
-    } catch (err) {
+    } catch (err: any) {
       console.error("Update error:", err);
-      toast({ title: "আপডেট ব্যর্থ", description: String(err), variant: "destructive" });
+      const msg = err?.message || String(err);
+      toast({ 
+        title: "আপডেট ব্যর্থ", 
+        description: msg, 
+        variant: "destructive" 
+      });
     } finally {
       setBusy(false);
     }
@@ -172,7 +181,12 @@ export default function AdminOrders() {
       setSelectedId(null);
     } catch (err: any) {
       console.error("Delete error:", err);
-      toast({ title: "ডিলিট ব্যর্থ", description: err.message, variant: "destructive" });
+      const msg = err?.message || String(err);
+      toast({ 
+        title: "ডিলিট ব্যর্থ", 
+        description: msg, 
+        variant: "destructive" 
+      });
     } finally {
       setBusy(false);
     }
@@ -223,6 +237,7 @@ export default function AdminOrders() {
                     <TableHead>Customer</TableHead>
                     <TableHead>Status</TableHead>
                     <TableHead>Delivery</TableHead>
+                    <TableHead>Risk</TableHead>
                     <TableHead className="text-right">Total</TableHead>
                     <TableHead>Date</TableHead>
                   </TableRow>
@@ -251,6 +266,17 @@ export default function AdminOrders() {
                         </TableCell>
                         <TableCell>
                           <span className="text-sm">{order.delivery_status}</span>
+                        </TableCell>
+                        <TableCell>
+                          {order.fraud_score !== undefined ? (
+                            <div className="flex items-center gap-1">
+                              <Badge variant={order.fraud_status === 'high' ? 'destructive' : order.fraud_status === 'medium' ? 'secondary' : 'outline'} className="text-[10px] px-1 py-0 h-4">
+                                {order.fraud_score}%
+                              </Badge>
+                            </div>
+                          ) : (
+                            <span className="text-xs text-muted-foreground">-</span>
+                          )}
                         </TableCell>
                         <TableCell className="text-right font-semibold">{formatBDT(order.total_bdt)}</TableCell>
                         <TableCell className="text-xs text-muted-foreground">{date}</TableCell>
@@ -307,6 +333,15 @@ export default function AdminOrders() {
                 </p>
               </div>
 
+              <FraudBreakdown 
+                phone={details.customer_phone} 
+                orderId={details.id} 
+                onUpdateStatus={() => {
+                  loadOrders();
+                  loadOrderDetails(details.id);
+                }} 
+              />
+
               <div>
                 <label className="mb-1 block text-sm font-medium">অর্ডার স্ট্যাটাস</label>
                 <Select value={editStatus ?? undefined} onValueChange={(v) => setEditStatus(v as OrderStatus)}>
@@ -346,6 +381,40 @@ export default function AdminOrders() {
                 <div>
                   <label className="mb-1 block text-sm font-medium">ডেলিভারি পার্টনার ফোন</label>
                   <Input value={deliveryPartnerPhone} onChange={(e) => setDeliveryPartnerPhone(e.target.value)} placeholder="ফোন" />
+                </div>
+              </div>
+
+              <div>
+                <label className="mb-1 block text-sm font-medium">ডেলিভারি ফি (BDT)</label>
+                <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+                  {[
+                    { label: "ঢাকা মেট্রো সিটি", cost: 70 },
+                    { label: "সাভার, গাজীপুর, কেরানীগঞ্জ, নারায়ণগঞ্জ", cost: 100 },
+                    { label: "অন্যান্য জেলা/বিভাগ", cost: 130 },
+                  ].map((opt) => (
+                    <Button
+                      key={opt.cost}
+                      type="button"
+                      variant={editDeliveryFee === opt.cost ? "default" : "outline"}
+                      className="h-9 justify-start text-[11px] px-2"
+                      onClick={() => setEditDeliveryFee(opt.cost)}
+                    >
+                      <span className="flex-1 text-left line-clamp-1">{opt.label}</span>
+                      <span className="ml-1 font-bold">৳{opt.cost}</span>
+                    </Button>
+                  ))}
+                  <div className="relative">
+                    <Input
+                      type="number"
+                      value={editDeliveryFee}
+                      onChange={(e) => setEditDeliveryFee(Number(e.target.value))}
+                      placeholder="কাস্টম ফি"
+                      className="h-9 pr-12 text-xs"
+                    />
+                    <div className="absolute right-3 top-1/2 -translate-y-1/2 text-[10px] text-muted-foreground font-medium pointer-events-none">
+                      Manual
+                    </div>
+                  </div>
                 </div>
               </div>
 

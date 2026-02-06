@@ -19,6 +19,7 @@ function mapProductRow(r: any): (ProductCardModel & { category_id: string; creat
     slug: r.slug,
     title_bn: r.title_bn,
     price_bdt: r.price_bdt,
+    discount_price_bdt: r.discount_price_bdt,
     compare_at_price_bdt: r.compare_at_price_bdt,
     image_url:
       (r.product_images ?? []).sort((a: any, b: any) => (a.sort_order ?? 0) - (b.sort_order ?? 0))[0]?.image_url ?? null,
@@ -42,7 +43,7 @@ export default function CategoryWiseProducts() {
           supabase.from("categories").select("id, slug, name_bn, hero_rank").order("hero_rank", { ascending: false }).limit(50),
           supabase
             .from("products")
-            .select("id, slug, title_bn, price_bdt, compare_at_price_bdt, category_id, created_at, product_images(image_url, sort_order)")
+            .select("id, slug, title_bn, price_bdt, discount_price_bdt, compare_at_price_bdt, category_id, created_at, product_images(image_url, sort_order)")
             .eq("is_active", true)
             .order("created_at", { ascending: false })
             .limit(1000),

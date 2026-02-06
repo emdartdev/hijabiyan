@@ -1,6 +1,6 @@
 export function formatBDT(amountBdt: number) {
   try {
-    return new Intl.NumberFormat("bn-BD", {
+    return new Intl.NumberFormat("en-BD", {
       style: "currency",
       currency: "BDT",
       maximumFractionDigits: 0,

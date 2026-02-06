@@ -1,9 +1,11 @@
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { createClient } from "@supabase/supabase-js";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers":
     "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
+  "Access-Control-Allow-Methods": "GET, POST, PATCH, DELETE, OPTIONS",
+  "Access-Control-Max-Age": "86400",
 };
 
 function json(status: number, body: unknown) {
@@ -36,7 +38,10 @@ async function requireAdmin(req: Request) {
   });
 
   const { data: userData, error: userErr } = await userClient.auth.getUser();
-  if (userErr || !userData?.user?.id) return { ok: false as const, status: 401, message: "Unauthorized" };
+  if (userErr || !userData?.user?.id) {
+    console.error("Auth error:", userErr);
+    return { ok: false as const, status: 401, message: "Unauthorized" };
+  }
 
   const userId = userData.user.id;
   const { data: roles, error: roleErr } = await svc
@@ -45,8 +50,9 @@ async function requireAdmin(req: Request) {
     .eq("user_id", userId)
     .eq("role", "admin")
     .limit(1);
+    
   if (roleErr) return { ok: false as const, status: 500, message: "Role check failed" };
-  if (!(roles ?? []).length) return { ok: false as const, status: 403, message: "Forbidden" };
+  if (!(roles ?? []).length) return { ok: false as const, status: 403, message: "Forbidden: Not an admin" };
 
   return { ok: true as const, svc };
 }
@@ -67,8 +73,13 @@ function isValidOrderStatus(v: string) {
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
+  console.log(`Admin-orders: [${req.method}] ${req.url}`);
+
   const gate = await requireAdmin(req);
-  if (!gate.ok) return json(gate.status, { ok: false, message: gate.message });
+  if (!gate.ok) {
+    console.warn(`Access denied: ${gate.status} ${gate.message}`);
+    return json(gate.status, { ok: false, message: gate.message });
+  }
   const admin = gate.svc;
 
   // GET list / details
@@ -79,6 +90,7 @@ Deno.serve(async (req) => {
     const limit = Math.min(Math.max(Number(qp.get("limit") ?? 200) || 200, 1), 500);
 
     if (id) {
+      console.log(`Fetching order details for: ${id}`);
       const { data: order, error: oErr } = await admin
         .from("orders")
         .select(
@@ -99,17 +111,12 @@ Deno.serve(async (req) => {
       return json(200, { ok: true, order, items: items ?? [] });
     }
 
-    const base = admin
+    const { data, error } = await admin
       .from("orders")
-      .select(
-        "id, tracking_code, customer_name, customer_phone, status, delivery_status, total_bdt, created_at",
-      )
+      .select("id, tracking_code, customer_name, customer_phone, status, delivery_status, total_bdt, created_at")
       .order("created_at", { ascending: false })
       .limit(limit);
 
-    // simple client-side search is okay, but we still narrow by phone if numeric-ish
-    // (keeps the implementation simple w/o SQL LIKE edge-cases)
-    const { data, error } = await base;
     if (error) return json(500, { ok: false, message: "Failed to load orders" });
 
     let rows = (data ?? []) as any[];
@@ -130,25 +137,27 @@ Deno.serve(async (req) => {
   if (req.method === "PATCH") {
     let body: any;
     try {
-      body = await req.json();
+      const raw = await req.clone().text();
+      console.log("PATCH body:", raw);
+      body = JSON.parse(raw);
     } catch {
-      return json(400, { ok: false, message: "Invalid JSON" });
+      return json(400, { ok: false, message: "Invalid JSON body" });
     }
 
     const id = clampStr(body?.id, 60);
-    if (!id) return json(400, { ok: false, message: "Invalid id" });
+    if (!id) return json(400, { ok: false, message: "Missing order ID" });
 
     const patch: Record<string, any> = {};
 
     if (body?.status !== undefined) {
       const s = clampStr(body.status, 30);
-      if (!isValidOrderStatus(s)) return json(400, { ok: false, message: "Invalid order status" });
+      if (!isValidOrderStatus(s)) return json(400, { ok: false, message: `Invalid status: ${s}` });
       patch.status = s;
     }
 
     if (body?.delivery_address_bn !== undefined) {
       const addr = clampStr(body.delivery_address_bn, 500);
-      if (!addr) return json(400, { ok: false, message: "Invalid address" });
+      if (!addr) return json(400, { ok: false, message: "Address cannot be empty" });
       patch.delivery_address_bn = addr;
     }
 
@@ -167,16 +176,44 @@ Deno.serve(async (req) => {
       patch.delivery_partner_phone = phone ? phone : null;
     }
 
+    if (body?.delivery_fee_bdt !== undefined) {
+      patch.delivery_fee_bdt = Number(body.delivery_fee_bdt);
+    }
+
     if (body?.delivery_status !== undefined) {
       const ds = clampStr(body.delivery_status, 30);
-      if (!isValidDeliveryStatus(ds)) return json(400, { ok: false, message: "Invalid delivery status" });
+      if (!isValidDeliveryStatus(ds)) return json(400, { ok: false, message: `Invalid delivery status: ${ds}` });
       patch.delivery_status = ds;
     }
 
-    if (!Object.keys(patch).length) return json(400, { ok: false, message: "No changes" });
+    if (!Object.keys(patch).length) return json(400, { ok: false, message: "No fields to update yielded" });
 
-    const { error } = await admin.from("orders").update(patch).eq("id", id);
-    if (error) return json(500, { ok: false, message: "Failed to update order" });
+    console.log(`Applying PATCH to order ${id}:`, patch);
+
+    // Recalculate total if financial fields changed
+    if (patch.delivery_fee_bdt !== undefined || patch.subtotal_bdt !== undefined || patch.discount_bdt !== undefined) {
+      const { data: current, error: fetchErr } = await admin
+        .from("orders")
+        .select("subtotal_bdt, delivery_fee_bdt, discount_bdt")
+        .eq("id", id)
+        .maybeSingle();
+
+      if (fetchErr) {
+        console.error("Recalculate fetch error:", fetchErr);
+      } else if (current) {
+        const subtotal = patch.subtotal_bdt ?? current.subtotal_bdt ?? 0;
+        const fee = patch.delivery_fee_bdt ?? current.delivery_fee_bdt ?? 0;
+        const discount = patch.discount_bdt ?? current.discount_bdt ?? 0;
+        patch.total_bdt = Math.max(0, subtotal + fee - discount);
+        console.log(`Recalculated total_bdt: ${patch.total_bdt}`);
+      }
+    }
+
+    const { error: updateErr } = await admin.from("orders").update(patch).eq("id", id);
+    if (updateErr) {
+      console.error("Database update error:", updateErr);
+      return json(500, { ok: false, message: "Database update failed", error: updateErr });
+    }
 
     return json(200, { ok: true });
   }
@@ -185,13 +222,13 @@ Deno.serve(async (req) => {
   if (req.method === "DELETE") {
     const qp = getQuery(req.url);
     const id = clampStr(qp.get("id"), 60);
-    if (!id) return json(400, { ok: false, message: "Invalid id" });
+    if (!id) return json(400, { ok: false, message: "Missing order ID in query" });
 
-    // order_items will be deleted automatically due to CASCADE in DB schema
+    console.log(`Deleting order: ${id}`);
     const { error } = await admin.from("orders").delete().eq("id", id);
     if (error) {
-      console.error("Delete order error:", error);
-      return json(500, { ok: false, message: "Failed to delete order" });
+      console.error("Database delete error:", error);
+      return json(500, { ok: false, message: "Database delete failed", error });
     }
 
     return json(200, { ok: true });

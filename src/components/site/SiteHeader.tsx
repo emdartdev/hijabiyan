@@ -10,13 +10,29 @@ import logo from "@/assets/logo.png";
 export default function SiteHeader() {
   const navigate = useNavigate();
   const [q, setQ] = useState("");
+  const [bump, setBump] = useState(false);
   const [cartCount, setCartCount] = useState(0);
 
   useEffect(() => {
-    const sync = () => setCartCount(readCart().reduce((s, it) => s + it.qty, 0));
+    const sync = () => {
+      const count = readCart().reduce((s, it) => s + it.qty, 0);
+      setCartCount(count);
+      setBump(true);
+      setTimeout(() => setBump(false), 300);
+    };
+    
     sync();
     window.addEventListener("storage", sync);
-    return () => window.removeEventListener("storage", sync);
+    import("@/lib/cart").then((m) => {
+      window.addEventListener(m.CART_EVENT, sync);
+    });
+
+    return () => {
+      window.removeEventListener("storage", sync);
+      import("@/lib/cart").then((m) => {
+        window.removeEventListener(m.CART_EVENT, sync);
+      });
+    };
   }, []);
 
   const submit = (e: React.FormEvent) => {
@@ -63,7 +79,7 @@ export default function SiteHeader() {
           <NavLink to="/cart" className="gap-2">
             <ShoppingBag className="h-4 w-4" />
             <span className="hidden sm:inline">কার্ট</span>
-            <span className="ml-1 rounded-full bg-secondary px-2 py-0.5 text-xs text-secondary-foreground">
+            <span className={`ml-1 rounded-full bg-secondary px-2 py-0.5 text-xs text-secondary-foreground transition-transform ${bump ? "animate-cart-bump" : ""}`}>
               {cartCount}
             </span>
           </NavLink>

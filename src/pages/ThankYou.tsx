@@ -83,11 +83,18 @@ export default function ThankYou() {
             <Card className="p-5">
               <div className="font-semibold">পরবর্তী ধাপ</div>
               <ol className="mt-3 space-y-2 text-sm text-muted-foreground">
-                <li>১) অর্ডার কনফার্ম</li>
-                <li>২) প্যাক করা হবে</li>
-                <li>৩) শিপ করা হবে</li>
-                <li>৪) ডেলিভারড</li>
+                <li>1) অর্ডার কনফার্ম</li>
+                <li>2) প্যাক করা হবে</li>
+                <li>3) শিপ করা হবে</li>
+                <li>4) ডেলিভারড</li>
               </ol>
+            </Card>
+
+            <Card className="mt-4 p-5">
+              <div className="font-semibold">ডেলিভারি তথ্য</div>
+              <p className="mt-2 text-sm leading-relaxed text-muted-foreground whitespace-pre-line">
+                ঢাকার ভিতরে ও ঢাকার বাইরে ডেলিভারি সুবিধা উপলব্ধ। পণ্য গ্রহণের সময় ডেলিভারি ম্যানের উপস্থিতিতেই ভালোভাবে চেক করে নেবেন। পণ্যে কোনো সমস্যা থাকলে সঙ্গে সঙ্গে জানাতে হবে। ডেলিভারি সম্পন্ন হওয়ার পর বা পরবর্তীতে সমস্যা জানালে রিটার্ন বা রিফান্ড গ্রহণযোগ্য হবে না।
+              </p>
             </Card>
           </aside>
         </div>

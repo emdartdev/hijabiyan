@@ -133,7 +133,7 @@ export default function AdminDashboard() {
 
             <Card>
               <CardHeader className="flex flex-row items-center justify-between pb-2">
-                <CardTitle className="text-sm font-medium">লো-স্টক (&lt; ৫)</CardTitle>
+                <CardTitle className="text-sm font-medium">লো-স্টক (&lt; 5)</CardTitle>
                 <AlertCircle className="h-4 w-4 text-destructive" />
               </CardHeader>
               <CardContent>

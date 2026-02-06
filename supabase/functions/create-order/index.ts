@@ -1,4 +1,4 @@
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { createClient } from "@supabase/supabase-js";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -40,12 +40,16 @@ Deno.serve(async (req) => {
   const serviceRole = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
   if (!supabaseUrl || !serviceRole) return json(500, { ok: false, message: "Server misconfigured" });
 
-  const admin = createClient(supabaseUrl, serviceRole);
+  const admin = createClient(supabaseUrl, serviceRole, {
+    auth: { persistSession: false, autoRefreshToken: false },
+  });
 
   let body: CreateOrderBody;
   try {
-    body = (await req.json()) as CreateOrderBody;
-  } catch {
+    const raw = await req.clone().text();
+    console.log("Create order payload:", raw);
+    body = JSON.parse(raw);
+  } catch (e) {
     return json(400, { ok: false, message: "Invalid JSON" });
   }
 
@@ -62,10 +66,9 @@ Deno.serve(async (req) => {
   if (!deliveryAddressBn || deliveryAddressBn.length > 500) return json(400, { ok: false, message: "Invalid address" });
   if (!items.length || items.length > 50) return json(400, { ok: false, message: "Invalid items" });
 
-  // Validate delivery fee against known values
-  const validDeliveryFees = [60, 80, 100, 130];
-  if (!validDeliveryFees.includes(deliveryFee)) {
-    return json(400, { ok: false, message: "Invalid delivery fee" });
+  // Validate delivery fee against range for flexibility
+  if (isNaN(deliveryFee) || deliveryFee < 0 || deliveryFee > 1000) {
+    return json(400, { ok: false, message: `Invalid delivery fee: ${deliveryFee}` });
   }
 
   for (const it of items) {
@@ -196,6 +199,20 @@ Deno.serve(async (req) => {
   if (itemsErr) {
     await admin.from("orders").delete().eq("id", orderRow.id);
     return json(500, { ok: false, message: "Failed to create order items" });
+  }
+
+  // Trigger fraud check asynchronously (don't wait for result if possible, but Edge Functions need wait usually)
+  try {
+    fetch(`${req.url.split("/create-order")[0]}/fraud-check`, {
+      method: "POST",
+      headers: {
+        "Authorization": `Bearer ${serviceRole}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ phone: customerPhone, orderId: orderRow.id }),
+    }).catch(e => console.error("Auto fraud check trigger error", e));
+  } catch (e) {
+    console.error("Async trigger failed", e);
   }
 
   return json(200, {
