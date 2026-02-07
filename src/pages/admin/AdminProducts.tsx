@@ -123,6 +123,8 @@ export default function AdminProducts() {
     return `${categorySlug}-${maxNumber + 1}`;
   };
 
+  const initialLoadDone = useRef(false);
+
   const loadBase = async () => {
     setLoading(true);
     try {
@@ -140,7 +142,12 @@ export default function AdminProducts() {
       if (prodErr) throw prodErr;
       setCategories(cats ?? []);
       setProducts((prods ?? []) as any);
-      if (!selectedId && (prods ?? []).length) setSelectedId((prods ?? [])[0].id);
+      
+      // Only auto-select first product on the very first load
+      if (!initialLoadDone.current && !selectedId && (prods ?? []).length) {
+        setSelectedId((prods ?? [])[0].id);
+        initialLoadDone.current = true;
+      }
     } catch (e: any) {
       toast({ title: "লোড করা যায়নি", description: e?.message ?? "আবার চেষ্টা করুন।" });
     } finally {
@@ -529,18 +536,21 @@ export default function AdminProducts() {
   return (
     <AdminShell title="পণ্য ম্যানেজমেন্ট">
       <div className="grid gap-6 lg:grid-cols-[360px_1fr]">
-        <aside>
+        <aside className="order-2 lg:order-1">
           <Card className="p-4">
             <div className="flex items-center justify-between gap-2">
               <div className="text-sm font-medium">পণ্য তালিকা</div>
-              <Button size="sm" onClick={newProduct}>
+              <Button size="sm" onClick={() => {
+                newProduct();
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+              }}>
                 নতুন পণ্য
               </Button>
             </div>
             <div className="mt-3">
               <Input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="সার্চ (নাম/slug/sku)" />
             </div>
-            <div className="mt-4 grid gap-2 max-h-[520px] overflow-auto pr-1">
+            <div className="mt-4 grid gap-2 max-h-[500px] lg:max-h-[600px] overflow-auto pr-1">
               {loading ? (
                 <div className="text-sm text-muted-foreground">লোড হচ্ছে...</div>
               ) : filtered.length ? (
@@ -550,7 +560,12 @@ export default function AdminProducts() {
                     <button
                       key={p.id}
                       type="button"
-                      onClick={() => setSelectedId(p.id)}
+                      onClick={() => {
+                        setSelectedId(p.id);
+                        if (window.innerWidth < 1024) {
+                          window.scrollTo({ top: 0, behavior: 'smooth' });
+                        }
+                      }}
                       className={[
                         "w-full rounded-md border p-3 text-left transition-colors flex items-center justify-between gap-3",
                         active ? "bg-secondary" : "bg-card hover:bg-secondary/40",
@@ -568,7 +583,7 @@ export default function AdminProducts() {
                         <div className="flex items-center gap-1" onClick={(e) => e.stopPropagation()}>
                           <Switch
                             checked={p.is_active}
-                            onCheckedChange={(val) => toggleStatus(p, { stopPropagation: () => { } } as any)}
+                            onCheckedChange={() => toggleStatus(p, { stopPropagation: () => { } } as any)}
                             onClick={(e) => e.stopPropagation()}
                             className="scale-75"
                           />
@@ -584,20 +599,20 @@ export default function AdminProducts() {
           </Card>
         </aside>
 
-        <section className="space-y-6">
-          <Card className="p-5">
-            <div className="flex flex-col gap-1 sm:flex-row sm:items-end sm:justify-between">
+        <section className="order-1 lg:order-2 space-y-6">
+          <Card className="p-4 sm:p-5">
+            <div className="flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
               <div>
-                <div className="text-sm text-muted-foreground">এডিটর</div>
-                <div className="text-lg font-semibold">{form.id ? "পণ্য আপডেট" : "নতুন পণ্য"}</div>
+                <div className="text-xs sm:text-sm text-muted-foreground">এডিটর</div>
+                <div className="text-base sm:text-lg font-semibold">{form.id ? "পণ্য আপডেট" : "নতুন পণ্য"}</div>
               </div>
               <div className="flex gap-2">
                 {form.id && (
-                  <Button variant="destructive" onClick={deleteProduct} disabled={busy}>
+                  <Button variant="destructive" size="sm" onClick={deleteProduct} disabled={busy}>
                     ডিলিট
                   </Button>
                 )}
-                <Button onClick={saveProduct} disabled={busy}>
+                <Button size="sm" onClick={saveProduct} disabled={busy}>
                   {busy ? "সেভ হচ্ছে..." : "সেভ"}
                 </Button>
               </div>

@@ -128,6 +128,30 @@ export default function Product() {
     navigate("/checkout");
   };
 
+  const handleAddToCart = () => {
+    if (!p) return;
+    const v = selectedVariant;
+    const currentPrice = getEffectiveUnitPrice();
+    upsertCartItem({
+      productId: p.id,
+      variantId: v?.id ?? null,
+      titleBn: p.title_bn,
+      imageUrl: mainImage,
+      colorBn: v?.color_bn ?? null,
+      sizeBn: v?.size_bn ?? null,
+      unitPriceBdt: currentPrice,
+      baseUnitPriceBdt: Number(priceBdt ?? 0),
+      price_tiers: p.price_tiers,
+      qty: qty,
+      categorySlug: p.categories?.slug ?? null,
+    });
+    
+    toast({
+      title: "কার্টে যোগ হয়েছে",
+      description: `${p.title_bn} কার্টে যোগ করা হয়েছে।`
+    });
+  };
+
   const getEffectiveUnitPrice = () => {
     return Number(selectedVariant?.price_bdt ?? p?.price_bdt ?? 0);
   };
@@ -254,11 +278,14 @@ export default function Product() {
                 </Card>
               ) : null}
 
-              <div className="mt-6 flex gap-3">
-                <SiteButton onClick={orderNow} size="lg">
+              <div className="mt-6 flex flex-wrap gap-3">
+                <SiteButton onClick={orderNow} size="lg" className="flex-1 md:flex-none">
                   অর্ডার করুন
                 </SiteButton>
-                <SiteButton asChild size="lg" variant="secondary">
+                <SiteButton onClick={handleAddToCart} variant="outline" size="lg" className="flex-1 md:flex-none">
+                  কার্টে এড করুন
+                </SiteButton>
+                <SiteButton asChild size="lg" variant="secondary" className="flex-1 md:flex-none">
                   <a href="/cart">কার্ট দেখুন</a>
                 </SiteButton>
               </div>

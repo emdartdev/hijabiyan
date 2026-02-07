@@ -202,22 +202,27 @@ export default function AdminCategories() {
         ) : filtered.length === 0 ? (
           <p className="text-muted-foreground">কোনো ক্যাটাগরি নেই।</p>
         ) : (
-          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+          <div className="grid gap-3 grid-cols-1 xs:grid-cols-2 lg:grid-cols-3">
             {filtered.map((cat) => (
-              <Card key={cat.id} className="cursor-pointer hover:border-primary" onClick={() => setSelectedId(cat.id)}>
-                <CardHeader className="pb-3">
-                  <CardTitle className="text-base">{cat.name_bn}</CardTitle>
+              <Card key={cat.id} className="cursor-pointer hover:border-primary transition-colors" onClick={() => setSelectedId(cat.id)}>
+                <CardHeader className="p-4 pb-2">
+                  <CardTitle className="text-base truncate">{cat.name_bn}</CardTitle>
                 </CardHeader>
-                <CardContent className="space-y-1 text-sm">
-                  <p className="text-muted-foreground">slug: {cat.slug}</p>
+                <CardContent className="p-4 pt-0 space-y-1 text-xs sm:text-sm">
+                  <p className="text-muted-foreground truncate">slug: {cat.slug}</p>
                   {cat.parent_id && (
-                    <p className="text-muted-foreground">
+                    <p className="text-muted-foreground truncate">
                       Parent: {categories.find((c) => c.id === cat.parent_id)?.name_bn ?? "?"}
                     </p>
                   )}
-                  <p className={cat.is_active ? "text-green-600" : "text-muted-foreground"}>
-                    {cat.is_active ? "প্রদর্শিত" : "লুকানো"}
-                  </p>
+                  <div className="pt-1 flex items-center justify-between gap-2">
+                    <span className={cat.is_active ? "text-green-600 font-medium" : "text-muted-foreground"}>
+                      {cat.is_active ? "প্রদর্শিত" : "লুকানো"}
+                    </span>
+                    <span className="text-[10px] text-muted-foreground uppercase font-bold px-1.5 py-0.5 rounded border bg-muted/50">
+                      Rank: {cat.hero_rank}
+                    </span>
+                  </div>
                 </CardContent>
               </Card>
             ))}

@@ -86,13 +86,13 @@ export default function SiteHeader() {
         </SiteButton>
       </div>
 
-      <div className="container pb-3 lg:hidden">
+      <div className="container pb-2 lg:hidden">
         <form onSubmit={submit} className="flex items-center gap-2">
           <div className="relative flex-1">
             <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-            <Input value={q} onChange={(e) => setQ(e.target.value)} placeholder="পণ্য খুঁজুন..." className="pl-9" />
+            <Input value={q} onChange={(e) => setQ(e.target.value)} placeholder="পণ্য খুঁজুন..." className="h-9 pl-9 text-sm" />
           </div>
-          <Button type="submit" variant="secondary">
+          <Button type="submit" variant="secondary" size="sm">
             খুঁজুন
           </Button>
         </form>

@@ -229,62 +229,64 @@ export default function AdminOrders() {
             <CardHeader className="pb-2">
               <CardTitle className="text-base">অর্ডার লিস্ট</CardTitle>
             </CardHeader>
-            <CardContent>
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Order</TableHead>
-                    <TableHead>Customer</TableHead>
-                    <TableHead>Status</TableHead>
-                    <TableHead>Delivery</TableHead>
-                    <TableHead>Risk</TableHead>
-                    <TableHead className="text-right">Total</TableHead>
-                    <TableHead>Date</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {filtered.map((order) => {
-                    const date = new Date(order.created_at).toLocaleString("bn-BD", {
-                      dateStyle: "medium",
-                      timeStyle: "short",
-                    });
-                    return (
-                      <TableRow
-                        key={order.id}
-                        className="cursor-pointer"
-                        onClick={() => setSelectedId(order.id)}
-                      >
-                        <TableCell className="font-medium">#{order.tracking_code}</TableCell>
-                        <TableCell>
-                          <div className="text-sm font-medium">{order.customer_name}</div>
-                          <div className="text-xs text-muted-foreground">{order.customer_phone}</div>
-                        </TableCell>
-                        <TableCell>
-                          <Badge variant={STATUS_VARIANTS[order.status as OrderStatus]}>
-                            {STATUS_LABELS[order.status as OrderStatus]}
-                          </Badge>
-                        </TableCell>
-                        <TableCell>
-                          <span className="text-sm">{order.delivery_status}</span>
-                        </TableCell>
-                        <TableCell>
-                          {order.fraud_score !== undefined ? (
-                            <div className="flex items-center gap-1">
-                              <Badge variant={order.fraud_status === 'high' ? 'destructive' : order.fraud_status === 'medium' ? 'secondary' : 'outline'} className="text-[10px] px-1 py-0 h-4">
-                                {order.fraud_score}%
-                              </Badge>
-                            </div>
-                          ) : (
-                            <span className="text-xs text-muted-foreground">-</span>
-                          )}
-                        </TableCell>
-                        <TableCell className="text-right font-semibold">{formatBDT(order.total_bdt)}</TableCell>
-                        <TableCell className="text-xs text-muted-foreground">{date}</TableCell>
-                      </TableRow>
-                    );
-                  })}
-                </TableBody>
-              </Table>
+            <CardContent className="p-0 sm:p-6">
+              <div className="overflow-x-auto">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead className="min-w-[100px]">Order</TableHead>
+                      <TableHead className="min-w-[150px]">Customer</TableHead>
+                      <TableHead>Status</TableHead>
+                      <TableHead className="hidden md:table-cell">Delivery</TableHead>
+                      <TableHead className="hidden sm:table-cell">Risk</TableHead>
+                      <TableHead className="text-right">Total</TableHead>
+                      <TableHead className="hidden lg:table-cell">Date</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {filtered.map((order) => {
+                      const date = new Date(order.created_at).toLocaleString("bn-BD", {
+                        dateStyle: "medium",
+                        timeStyle: "short",
+                      });
+                      return (
+                        <TableRow
+                          key={order.id}
+                          className="cursor-pointer"
+                          onClick={() => setSelectedId(order.id)}
+                        >
+                          <TableCell className="font-medium">#{order.tracking_code}</TableCell>
+                          <TableCell>
+                            <div className="text-sm font-medium truncate max-w-[120px]">{order.customer_name}</div>
+                            <div className="text-xs text-muted-foreground">{order.customer_phone}</div>
+                          </TableCell>
+                          <TableCell>
+                            <Badge variant={STATUS_VARIANTS[order.status as OrderStatus]} className="text-[10px] sm:text-xs">
+                              {STATUS_LABELS[order.status as OrderStatus]}
+                            </Badge>
+                          </TableCell>
+                          <TableCell className="hidden md:table-cell">
+                            <span className="text-sm">{order.delivery_status}</span>
+                          </TableCell>
+                          <TableCell className="hidden sm:table-cell">
+                            {order.fraud_score !== undefined ? (
+                              <div className="flex items-center gap-1">
+                                <Badge variant={order.fraud_status === 'high' ? 'destructive' : order.fraud_status === 'medium' ? 'secondary' : 'outline'} className="text-[10px] px-1 py-0 h-4">
+                                  {order.fraud_score}%
+                                </Badge>
+                              </div>
+                            ) : (
+                              <span className="text-xs text-muted-foreground">-</span>
+                            )}
+                          </TableCell>
+                          <TableCell className="text-right font-semibold">{formatBDT(order.total_bdt)}</TableCell>
+                          <TableCell className="hidden lg:table-cell className text-xs text-muted-foreground">{date}</TableCell>
+                        </TableRow>
+                      );
+                    })}
+                  </TableBody>
+                </Table>
+              </div>
             </CardContent>
           </Card>
         )}

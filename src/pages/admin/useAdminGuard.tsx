@@ -16,8 +16,8 @@ export function useAdminGuard() {
   useEffect(() => {
     let mounted = true;
 
-    const check = async () => {
-      setState((s) => ({ ...s, loading: true }));
+    const check = async (isInitial = false) => {
+      if (isInitial) setState((s) => ({ ...s, loading: true }));
 
       const {
         data: { session },
@@ -37,10 +37,10 @@ export function useAdminGuard() {
       if (!isAdmin) navigate("/admin/login", { replace: true });
     };
 
-    check();
+    check(true);
 
     const { data: sub } = supabase.auth.onAuthStateChange(() => {
-      check();
+      check(false);
     });
 
     return () => {
