@@ -5,37 +5,43 @@ import path from 'path';
 import { fileURLToPath } from 'url';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
-dotenv.config({ path: path.join(__dirname, '.env.local') });
+dotenv.config({ path: path.join(__dirname, '.env') });
 
 const supabaseUrl = process.env.VITE_SUPABASE_URL;
-const supabaseKey = process.env.VITE_SUPABASE_ANON_KEY;
+const supabaseKey = process.env.VITE_SUPABASE_PUBLISHABLE_KEY;
 
 if (!supabaseUrl || !supabaseKey) {
-  console.error("Missing env vars. Please check .env.local");
+  console.error("Missing env vars. Please check .env");
   process.exit(1);
 }
 
 const supabase = createClient(supabaseUrl, supabaseKey);
 
 async function diagnose() {
-  console.log("Checking products table...");
-  const { data, error } = await supabase
+  console.log("Checking products and variants...");
+  const { data: prods, error: prodErr } = await supabase
     .from('products')
-    .select('id, title_bn, price_tiers, gift_rules')
-    .eq('is_active', true)
-    .limit(10);
+    .select('id, title_bn, product_variants(id)')
+    .limit(50);
 
-  if (error) {
-    console.error("Error fetching products:", error);
-    return;
+  if (prodErr) {
+    console.error("Error fetching products:", prodErr);
+  } else {
+    // Find one with variants
+    const withVars = prods.find(p => p.product_variants && p.product_variants.length > 0);
+    if (withVars) {
+      console.log(`Attempting to delete product ${withVars.id} (${withVars.title_bn}) using RPC delete_product_final...`);
+      const { error: rpcErr } = await supabase.rpc('delete_product_final', { p_product_id: withVars.id });
+      
+      if (rpcErr) {
+        console.error("RPC failed! Error details:", JSON.stringify(rpcErr, null, 2));
+      } else {
+        console.log("RPC successful!");
+      }
+    } else {
+      console.log("No products with variants found in the first 50.");
+    }
   }
-
-  console.log(`Found ${data.length} active products.`);
-  data.forEach(p => {
-    console.log(`- [${p.id}] ${p.title_bn}`);
-    console.log(`  Tiers: ${JSON.stringify(p.price_tiers)}`);
-    console.log(`  Gifts: ${JSON.stringify(p.gift_rules)}`);
-  });
 }
 
 diagnose();

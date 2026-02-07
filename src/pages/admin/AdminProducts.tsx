@@ -11,7 +11,7 @@ import { formatBDT } from "@/lib/money";
 import { usePageMeta } from "@/hooks/use-page-meta";
 import { forwardRef } from "react";
 import { Switch } from "@/components/ui/switch";
-import { Upload, Image as ImageIcon } from "lucide-react";
+import { Upload, Image as ImageIcon, Trash2 } from "lucide-react";
 import { convertDriveUrl } from "@/lib/image-utils";
 
 type AdminProductRow = {
@@ -336,37 +336,39 @@ export default function AdminProducts() {
     }, 500);
   };
 
-  const deleteProduct = async () => {
-    if (!form.id || !confirm("এই পণ্যটি ডিলিট করবেন? রিভার্ট করা যাবে না।")) return;
+  const deleteProduct = async (id?: string) => {
+    const targetId = id ?? form.id;
+    if (!targetId || !confirm("এই পণ্যটি ডিলিট করবেন? রিভার্ট করা যাবে না।")) return;
+    
     setBusy(true);
     try {
-      // Use the RPC function in case there are dependencies (or use our logic)
-      // The user wants to use a DB function. We try that first.
-      const { error } = await supabase.rpc("delete_product_safe" as any, { p_product_id: form.id });
+      const { error } = await supabase.rpc("delete_product_final" as any, { p_product_id: targetId });
       if (error) throw error;
 
       toast({ title: "পণ্য ডিলিট হয়েছে" });
 
       // Optimistic update
-      setProducts((prev) => prev.filter((p) => p.id !== form.id));
+      setProducts((prev) => prev.filter((p) => p.id !== targetId));
 
-      // Cleanup
-      setSelectedId(null);
-      setForm({
-        title_bn: "",
-        slug: "",
-        sku: randomSku(),
-        category_id: categories[0]?.id ?? null,
-        price_bdt: 0,
-        discount_price_bdt: null,
-        compare_at_price_bdt: null,
-        is_active: true,
-        description_bn: null,
-        care_instructions_bn: null,
-        delivery_notes_bn: null,
-      });
-      setVariants([]);
-      setImages([]);
+      // Cleanup if we deleted the currently selected product
+      if (targetId === selectedId) {
+        setSelectedId(null);
+        setForm({
+          title_bn: "",
+          slug: "",
+          sku: randomSku(),
+          category_id: categories[0]?.id ?? null,
+          price_bdt: 0,
+          discount_price_bdt: null,
+          compare_at_price_bdt: null,
+          is_active: true,
+          description_bn: null,
+          care_instructions_bn: null,
+          delivery_notes_bn: null,
+        });
+        setVariants([]);
+        setImages([]);
+      }
 
     } catch (e: any) {
       console.error("Delete failed", e);
@@ -580,13 +582,24 @@ export default function AdminProducts() {
 
                       <div className="flex flex-col items-end gap-2 shrink-0">
                         <span className="text-xs font-semibold">{formatBDT(p.discount_price_bdt ?? p.price_bdt)}</span>
-                        <div className="flex items-center gap-1" onClick={(e) => e.stopPropagation()}>
+                        <div className="flex items-center gap-2" onClick={(e) => e.stopPropagation()}>
                           <Switch
                             checked={p.is_active}
                             onCheckedChange={() => toggleStatus(p, { stopPropagation: () => { } } as any)}
                             onClick={(e) => e.stopPropagation()}
                             className="scale-75"
                           />
+                          <Button 
+                            variant="ghost" 
+                            size="icon" 
+                            className="h-8 w-8 text-muted-foreground hover:text-destructive"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              deleteProduct(p.id);
+                            }}
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
                         </div>
                       </div>
                     </button>
@@ -608,7 +621,7 @@ export default function AdminProducts() {
               </div>
               <div className="flex gap-2">
                 {form.id && (
-                  <Button variant="destructive" size="sm" onClick={deleteProduct} disabled={busy}>
+                  <Button variant="destructive" size="sm" onClick={() => deleteProduct()} disabled={busy}>
                     ডিলিট
                   </Button>
                 )}
