@@ -78,7 +78,7 @@ export function updateCartQty(productId: string, variantId: string | null | unde
       const itKey = `${it.productId}::${it.variantId ?? ""}`;
       if (itKey !== key) return it;
       
-      return { ...it, qty, unitPriceBdt: it.baseUnitPriceBdt };
+      return { ...it, qty };
     });
   writeCart(next);
   return next;

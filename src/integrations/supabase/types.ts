@@ -246,6 +246,7 @@ export type Database = {
           created_at: string
           delivery_info_bn: string | null
           description_bn: string | null
+          discount_price_bdt: number | null
           id: string
           is_active: boolean
           is_bestseller: boolean
@@ -262,6 +263,7 @@ export type Database = {
           created_at?: string
           delivery_info_bn?: string | null
           description_bn?: string | null
+          discount_price_bdt?: number | null
           id?: string
           is_active?: boolean
           is_bestseller?: boolean
@@ -278,6 +280,7 @@ export type Database = {
           created_at?: string
           delivery_info_bn?: string | null
           description_bn?: string | null
+          discount_price_bdt?: number | null
           id?: string
           is_active?: boolean
           is_bestseller?: boolean

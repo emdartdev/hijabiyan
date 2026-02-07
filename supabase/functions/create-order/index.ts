@@ -95,7 +95,7 @@ Deno.serve(async (req) => {
   const productIds = [...new Set(items.map((it) => it.productId))];
   const { data: products, error: prodErr } = await admin
     .from("products")
-    .select("id, title_bn, price_bdt, is_active, price_tiers")
+    .select("id, title_bn, price_bdt, discount_price_bdt, is_active, price_tiers")
     .in("id", productIds);
   if (prodErr) return json(500, { ok: false, message: "Failed to load products" });
 
@@ -106,7 +106,7 @@ Deno.serve(async (req) => {
   if (variantIds.length) {
     const { data: variants, error: varErr } = await admin
       .from("product_variants")
-      .select("id, product_id, color_bn, size_bn, stock_qty, price_bdt, is_active")
+      .select("id, product_id, color_bn, size_bn, stock_qty, price_bdt, discount_price_bdt, is_active")
       .in("id", variantIds);
     if (varErr) return json(500, { ok: false, message: "Failed to load variants" });
     for (const v of variants ?? []) variantMap.set(v.id as string, v);
@@ -119,7 +119,11 @@ Deno.serve(async (req) => {
     const prod = productMap.get(it.productId);
     if (!prod || !prod.is_active) return json(400, { ok: false, message: "Product unavailable" });
 
-    let unitPrice = Number(prod.price_bdt);
+    // Use discount_price_bdt if available, otherwise price_bdt
+    const basePrice = Number(prod.price_bdt);
+    const discPrice = prod.discount_price_bdt ? Number(prod.discount_price_bdt) : null;
+    let unitPrice = discPrice ?? basePrice;
+
     let colorBn: string | null = null;
     let sizeBn: string | null = null;
     let variantId: string | null = it.variantId ? String(it.variantId) : null;
@@ -129,7 +133,18 @@ Deno.serve(async (req) => {
       if (!v || !v.is_active || v.product_id !== prod.id) return json(400, { ok: false, message: "Variant unavailable" });
       colorBn = v.color_bn ?? null;
       sizeBn = v.size_bn ?? null;
-      if (v.price_bdt != null) unitPrice = Number(v.price_bdt);
+
+      // Variant price prioritization: Variant Discount > Variant Price > Product Discount > Product Price
+      const vBasePrice = v.price_bdt != null ? Number(v.price_bdt) : null;
+      const vDiscPrice = v.discount_price_bdt != null ? Number(v.discount_price_bdt) : null;
+
+      if (vDiscPrice != null) {
+        unitPrice = vDiscPrice;
+      } else if (vBasePrice != null) {
+        unitPrice = vBasePrice;
+      }
+      // If variant doesn't have prices, it inherits Product's unitPrice (which already considers discount)
+
       if (Number(v.stock_qty) < Number(it.qty)) return json(400, { ok: false, message: "Stock not enough" });
     }
 

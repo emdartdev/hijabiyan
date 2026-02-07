@@ -17,6 +17,7 @@ type Variant = {
   color_bn: string | null;
   size_bn: string | null;
   price_bdt: number | null;
+  discount_price_bdt: number | null;
   stock_qty: number;
   price_tiers?: { min_qty: number; unit_price: number }[];
   gift_rules?: { min_qty: number; gift_name: string }[];
@@ -153,7 +154,14 @@ export default function Product() {
   };
 
   const getEffectiveUnitPrice = () => {
-    return Number(selectedVariant?.price_bdt ?? p?.price_bdt ?? 0);
+    // Priority: Variant Discount > Variant Price > Product Discount > Product Price
+    const v = selectedVariant;
+    if (v) {
+      if (v.discount_price_bdt != null) return Number(v.discount_price_bdt);
+      if (v.price_bdt != null) return Number(v.price_bdt);
+    }
+    if (p?.discount_price_bdt != null) return Number(p.discount_price_bdt);
+    return Number(p?.price_bdt ?? 0);
   };
 
   const getEarnedGifts = () => {
@@ -212,7 +220,7 @@ export default function Product() {
                     <div className="text-3xl font-bold text-primary">{formatBDT(p.price_bdt)}</div>
                   </>
                 ) : (
-                  <div className="text-3xl font-bold text-primary">{formatBDT(priceBdt)}</div>
+                  <div className="mt-1 text-lg font-semibold">{formatBDT(totalPrice)}</div>
                 )}
               </div>
 

@@ -195,7 +195,7 @@ export default function Checkout() {
           <aside>
             <Card className="p-5">
               <div className="text-sm text-muted-foreground">সাবটোটাল</div>
-              <div className="mt-1 text-lg font-semibold">{formatBDT(baseSubtotal)}</div>
+              <div className="mt-1 text-lg font-semibold">{formatBDT(subtotal)}</div>
 
               <div className="mt-3 text-sm text-muted-foreground">ডেলিভারি ফি</div>
               <div className="mt-1 font-medium">{deliveryFee ? formatBDT(deliveryFee) : "অর্ডার কনফার্মের পরে জানানো হবে"}</div>
