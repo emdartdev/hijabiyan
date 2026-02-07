@@ -293,9 +293,6 @@ export default function Product() {
                 <SiteButton onClick={handleAddToCart} variant="outline" size="lg" className="flex-1 md:flex-none">
                   কার্টে এড করুন
                 </SiteButton>
-                <SiteButton asChild size="lg" variant="secondary" className="flex-1 md:flex-none">
-                  <a href="/cart">কার্ট দেখুন</a>
-                </SiteButton>
               </div>
 
               {p.description_bn ? (
